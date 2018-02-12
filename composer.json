@@ -1,0 +1,22 @@
+{
+    "name": "graviton/compose-transpiler",
+    "license": "MIT",
+    "require": {
+        "symfony/yaml": "^4.0",
+        "twig/twig": "^2.4",
+        "symfony/filesystem": "^4.0",
+        "ckr/arraymerger": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {"Graviton\\ComposeTranspiler\\": "src/"}
+    },
+    "authors": [
+        {
+            "name": "List of contributors",
+            "homepage": "https://github.com/libgraviton/compose-transpiler/graphs/contributors"
+        }
+    ]
+}

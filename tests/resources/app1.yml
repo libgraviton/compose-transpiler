@@ -1,0 +1,10 @@
+components:
+  fred:
+    expose:
+      doExpose: true
+    mixins:
+      more:
+  hans:
+    mixins:
+      more:
+        derDude: yes

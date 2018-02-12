@@ -1,0 +1,8 @@
+version: 1
+services:
+  fred:
+    image: 'fred:${TAG}'
+    addedKey: yeah
+networks:
+  internal:
+    external: false

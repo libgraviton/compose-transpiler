@@ -1,0 +1,14 @@
+version: 99
+services:
+  fred:
+    image: 'fred:1.0.0'
+    addedKey: yeah
+  fred-expose:
+    image: 'nginx:5.5.5'
+  hans:
+    image: 'hans:2.0.0'
+    addedKey: yeah
+    oneMoreKey: why
+networks:
+  internal:
+    external: false

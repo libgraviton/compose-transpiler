@@ -1,0 +1,6 @@
+header:
+  template: customHeader
+components:
+  fred:
+    mixins:
+      more:
