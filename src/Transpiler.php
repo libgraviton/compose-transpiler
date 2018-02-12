@@ -58,16 +58,16 @@ class Transpiler {
         $this->generateEnvList = $generateEnvList;
     }
 
-    public function transpile($profile, $destFile)
+    public function transpile($profileFile, $destFile)
     {
-        $profile = Yaml::parseFile($profile);
+        $profile = Yaml::parseFile($profileFile);
 
         // if we find that we have 'version' and 'services' in our file, we assume it's already a recipe -> just output
         if (isset($profile['version']) && isset($profile['services'])) {
             if ($destFile == '-') {
-                echo file_get_contents($profile);
+                echo file_get_contents($profileFile);
             } else {
-                $this->fs->copy($profile, $destFile);
+                $this->fs->copy($profileFile, $destFile);
             }
             return true;
         }
