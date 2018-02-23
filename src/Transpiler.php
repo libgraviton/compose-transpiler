@@ -1,17 +1,51 @@
 <?php
+/**
+ * main transpiler class
+ */
 namespace Graviton\ComposeTranspiler;
 
+use Graviton\ComposeTranspiler\Util\EnvFileHandler;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
+ * @license  https://opensource.org/licenses/MIT MIT License
+ * @link     http://swisscom.ch
+ */
 class Transpiler {
 
     private $baseDir;
+    private $baseTmplDir;
+    private $componentDir;
+    private $mixinsDir;
 
     /**
      * @var Filesystem
      */
     private $fs;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
+     * @var array
+     */
+    private $loggerVerbosityLevelMap = [
+        LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+        LogLevel::INFO   => OutputInterface::VERBOSITY_NORMAL
+    ];
+
+    /**
+     * @var EnvFileHandler
+     */
+    private $envFileHandler;
 
     /**
      * @var \Twig_Environment
@@ -22,13 +56,15 @@ class Transpiler {
 
     private $generateEnvList = false;
 
-    public function __construct($baseDir)
+    public function __construct($baseDir, OutputInterface $output)
     {
         $this->baseDir = $baseDir;
         $this->baseTmplDir = 'base/';
         $this->componentDir = 'components/';
         $this->mixinsDir = 'mixins/';
+        $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
+        $this->envFileHandler = new EnvFileHandler($this->logger);
 
         $loader = new \Twig_Loader_Filesystem($this->baseDir);
         $this->twig = new \Twig_Environment($loader);
@@ -115,6 +151,8 @@ class Transpiler {
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
 
         $this->dumpYaml($recipe, $destFile);
+
+        $this->logger->info('Wrote file "'.$destFile.'"');
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -166,26 +204,47 @@ class Transpiler {
         return $services;
     }
 
-
+    /**
+     * gets a single template and renders it with data
+     *
+     * @param string $file template
+     * @param array $data data
+     * @return mixed
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
+     */
     private function getSingleFile($file, $data = [])
     {
         $file = $this->twig->load($file)->render($data);
         return Yaml::parse($file);
     }
 
+    /**
+     * replaces all ${TAG} variables with the content from the release file
+     *
+     * @param string $content the compile compose recipe
+     * @return mixed replaced
+     * @throws \Exception
+     */
     private function replaceReleaseTags($content)
     {
-        if (is_null($this->releaseFile)) {
-            return $content;
+        if (!is_null($this->releaseFile)) {
+            if (!file_exists($this->releaseFile)) {
+                throw new \Exception("File '".$this->releaseFile."' does not exist");
+            }
+
+            foreach (file($this->releaseFile) as $release) {
+                $releaseParts = explode(":", trim($release));
+                $content = str_replace($releaseParts[0].':${TAG}', trim($release), $content);
+            }
         }
 
-        if (!file_exists($this->releaseFile)) {
-            throw new \Exception("File '".$this->releaseFile."' does not exist");
-        }
-
-        foreach (file($this->releaseFile) as $release) {
-            $releaseParts = explode(":", trim($release));
-            $content = str_replace($releaseParts[0].':${TAG}', trim($release), $content);
+        // replace missing ${TAG} mit notice!
+        preg_match_all('/([a-z0-9-_]*)\/([a-z0-9-_]*):\$\{TAG\}/i', $content, $matches);
+        foreach ($matches[0] as $matched) {
+            $this->logger->warning('Replace unset image '.$matched.' with "latest"!');
+            $content = str_replace($matched, str_replace('${TAG}', 'latest', $matched), $content);
         }
 
         return $content;
@@ -202,7 +261,20 @@ class Transpiler {
         $vars = array_unique($matches[1]);
         sort($vars);
 
-        file_put_contents($file.'.env', implode("=".PHP_EOL, $vars).'='.PHP_EOL);
+        // flip keys
+        $vars = array_combine($vars, array_fill(0, count($vars), ''));
+
+        // special env TAG we don't want here..
+        if (isset($vars['TAG'])) {
+            unset($vars['TAG']);
+        }
+
+        $envFilename = $file;
+        if (substr($envFilename, -4) == '.yml') {
+            $envFilename = substr($envFilename, 0,-4).'.env';
+        }
+
+        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $envFilename);
     }
 
     private function dumpYaml($content, $file)
