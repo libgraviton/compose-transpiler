@@ -87,7 +87,13 @@ class TranspileCommand extends Command
             $t->setReleaseFile($releaseFile);
         }
 
-        $t->setGenerateEnvList(true);
+        $baseEnvFile = $input->getOption('baseEnvFile');
+        if (!is_null($baseEnvFile)) {
+            if (!file_exists($baseEnvFile)) {
+                throw new \LogicException('File "'.$baseEnvFile.'" does not exist.');
+            }
+            $t->setBaseEnvFile($baseEnvFile);
+        }
 
         $t->transpile($defFile, $input->getArgument('outFile'));
     }

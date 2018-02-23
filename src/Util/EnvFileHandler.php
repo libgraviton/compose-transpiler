@@ -37,15 +37,14 @@ class EnvFileHandler
         if (file_exists($targetFile)) {
             $this->existingFileAdd($values, $targetFile);
         } else {
-            $this->fs->dumpFile($targetFile, implode("=".PHP_EOL, $values).'='.PHP_EOL);
+            $this->fs->dumpFile($targetFile, implode(PHP_EOL, $values));
         }
-
-        $this->logger->info('Wrote file "'.$targetFile.'"');
     }
 
-    public function existingFileAdd($values, $filename) {
+    public function getValuesFromFile($filename)
+    {
         $contents = file($filename);
-        $newContents = [];
+        $lines = [];
         foreach ($contents as $line) {
             $line = trim($line);
 
@@ -56,28 +55,42 @@ class EnvFileHandler
             if (strpos($line, '=') > 0 && substr($line, 0, 1) != '#') {
                 // value line -> split up and trim!
                 $parts = array_map('trim', explode('=', $line));
-                $key = $parts[0];
-
-                // unset in base array -> it is set already!
-                if (isset($values[$key])) {
-                    unset($values[$key]);
-                    $newContents[] = implode("=", $parts);
-                }
+                $lines[$parts[0]] = $line;
             } else {
-                $newContents[] = $line;
+                $lines[] = $line;
+            }
+        }
+        return $lines;
+    }
+
+
+
+    private function existingFileAdd($values, $filename)
+    {
+        $lines = $this->getValuesFromFile($filename);
+
+        foreach ($lines as $key => $line) {
+            if (isset($values[$key])) {
+                unset($values[$key]);
             }
         }
 
+        // filter comments from base
+        $values = array_filter($values, function($key) {
+            return !is_numeric($key);
+        }, ARRAY_FILTER_USE_KEY);
+
         // new stuff to add?
         if (!empty($values)) {
+            $newContents = [];
             $newContents[] = '# added on '.date('Y-m-d');
 
             foreach ($values as $name => $value) {
                 $this->logger->info('Added new env File entry "'.$name.'"');
-                $newContents[] = $name.'='.$value;
+                $newContents[] = $value;
             }
-        }
 
-        $this->fs->dumpFile($filename, implode(PHP_EOL, $newContents));
+            $this->fs->appendToFile($filename, PHP_EOL.implode(PHP_EOL, $newContents));
+        }
     }
 }

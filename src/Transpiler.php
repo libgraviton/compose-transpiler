@@ -23,6 +23,7 @@ class Transpiler {
     private $baseTmplDir;
     private $componentDir;
     private $mixinsDir;
+    private $scriptsDir;
 
     /**
      * @var Filesystem
@@ -53,8 +54,7 @@ class Transpiler {
     private $twig;
 
     private $releaseFile;
-
-    private $generateEnvList = false;
+    private $baseEnvFile;
 
     public function __construct($baseDir, OutputInterface $output)
     {
@@ -62,6 +62,7 @@ class Transpiler {
         $this->baseTmplDir = 'base/';
         $this->componentDir = 'components/';
         $this->mixinsDir = 'mixins/';
+        $this->scriptsDir = 'scripts/';
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
         $this->envFileHandler = new EnvFileHandler($this->logger);
@@ -83,15 +84,15 @@ class Transpiler {
     }
 
     /**
-     * set GenerateEnvList
+     * set BaseEnvFile
      *
-     * @param bool $generateEnvList generateEnvList
+     * @param mixed $baseEnvFile baseEnvFile
      *
      * @return void
      */
-    public function setGenerateEnvList($generateEnvList)
+    public function setBaseEnvFile($baseEnvFile)
     {
-        $this->generateEnvList = $generateEnvList;
+        $this->baseEnvFile = $baseEnvFile;
     }
 
     public function transpile($profileFile, $destFile)
@@ -150,9 +151,43 @@ class Transpiler {
 
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
 
-        $this->dumpYaml($recipe, $destFile);
-
+        // write generated yaml file
+        $renderedYaml = $this->dumpYaml($recipe, $destFile);
         $this->logger->info('Wrote file "'.$destFile.'"');
+
+        // write env file
+        $envFilename = $destFile;
+        if (substr($envFilename, -4) == '.yml') {
+            $envFilename = substr($envFilename, 0,-4).'.env';
+        }
+        $this->generateEnvFile($envFilename, $renderedYaml);
+        $this->logger->info('Wrote file "'.$envFilename.'"');
+
+        // are there any scripts to generate?
+        if (isset($profile['scripts']) && is_array($profile['scripts'])) {
+            $baseScriptData = [
+                'recipe' =>Yaml::parse($renderedYaml),
+                'recipePath' => $destFile,
+                'envFilePath' => $envFilename
+            ];
+
+            foreach ($profile['scripts'] as $scriptName => $scriptData) {
+                if (is_null($scriptData)) {
+                    $scriptData = [];
+                }
+                $scriptData = array_merge($baseScriptData, $scriptData);
+
+                if (!isset($scriptData['filename'])) {
+                    throw new \LogicException("You must specify a filename - what should be the name of the script.");
+                }
+
+                $scriptDestination = pathinfo($destFile,PATHINFO_DIRNAME).'/'.$scriptData['filename'];
+                $file = $this->scriptsDir.$scriptName.'.tmpl';
+                $this->fs->dumpFile($scriptDestination, $this->getSingleFile($file, $scriptData, false));
+                $this->logger->info('Wrote "'.$scriptDestination.'"');
+            }
+        }
+
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -196,6 +231,9 @@ class Transpiler {
      * @param $data
      *
      * @return service array with exposed added
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
@@ -214,10 +252,13 @@ class Transpiler {
      * @throws \Twig_Error_Runtime
      * @throws \Twig_Error_Syntax
      */
-    private function getSingleFile($file, $data = [])
+    private function getSingleFile($file, $data = [], $isYaml = true)
     {
         $file = $this->twig->load($file)->render($data);
-        return Yaml::parse($file);
+        if ($isYaml) {
+            return Yaml::parse($file);
+        }
+        return $file;
     }
 
     /**
@@ -252,29 +293,31 @@ class Transpiler {
 
     private function generateEnvFile($file, $content)
     {
-        if (!$this->generateEnvList) {
-            return;
-        }
-
         preg_match_all('/\$\{([a-z0-9_-]*)\}/i', $content, $matches);
 
         $vars = array_unique($matches[1]);
         sort($vars);
 
-        // flip keys
-        $vars = array_combine($vars, array_fill(0, count($vars), ''));
+        // flip keys & fill lines
+        $varContents = array_map(function($value) {
+            return $value."=";
+        }, $vars);
+        $vars = array_combine($vars, $varContents);
 
         // special env TAG we don't want here..
         if (isset($vars['TAG'])) {
             unset($vars['TAG']);
         }
 
-        $envFilename = $file;
-        if (substr($envFilename, -4) == '.yml') {
-            $envFilename = substr($envFilename, 0,-4).'.env';
+        // do we have a base file?
+        if ($this->baseEnvFile) {
+            $this->envFileHandler->writeEnvFromArrayNoOverwrite(
+                $this->envFileHandler->getValuesFromFile($this->baseEnvFile),
+                $file
+            );
         }
 
-        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $envFilename);
+        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $file);
     }
 
     private function dumpYaml($content, $file)
@@ -290,8 +333,9 @@ class Transpiler {
         if ($file == '-') { // stdout
             echo $content;
         } else {
-            $this->generateEnvFile($file, $content);
             $this->fs->dumpFile($file, $content);
         }
+
+        return $content;
     }
 }
