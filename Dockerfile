@@ -9,4 +9,5 @@ RUN apk update && \
     cd /app && \
     composer install --no-dev --no-interaction --no-progress && \
     composer dump-autoload --optimize --no-dev --classmap-authoritative && \
-    composer clear-cache
+    composer clear-cache && \
+    chmod +x /app/bin/app
