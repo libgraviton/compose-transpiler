@@ -241,7 +241,7 @@ class Transpiler {
         }
 
         // replace missing ${TAG} mit notice!
-        preg_match_all('/([a-z0-9-_]*)\/([a-z0-9-_]*):\$\{TAG\}/i', $content, $matches);
+        preg_match_all('/([a-z0-9-_]*):\$\{TAG\}/i', $content, $matches);
         foreach ($matches[0] as $matched) {
             $this->logger->warning('Replace unset image '.$matched.' with "latest"!');
             $content = str_replace($matched, str_replace('${TAG}', 'latest', $matched), $content);

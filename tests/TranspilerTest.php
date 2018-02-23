@@ -9,7 +9,8 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
     public function testTranspiling($filename, $releaseFile = null)
     {
         $sut = new \Graviton\ComposeTranspiler\Transpiler(
-            __DIR__.'/resources/_templates'
+            __DIR__.'/resources/_templates',
+            $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
 
         if (!is_null($releaseFile)) {

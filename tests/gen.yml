@@ -1,7 +1,7 @@
 version: 1
 services:
   fred:
-    image: 'fred:${TAG}'
+    image: 'fred:latest'
     addedKey: yeah
 networks:
   internal:
