@@ -36,6 +36,11 @@ class Transpiler {
     private $logger;
 
     /**
+     * @var bool
+     */
+    private $dirMode = false;
+
+    /**
      * @var array
      */
     private $loggerVerbosityLevelMap = [
@@ -95,7 +100,19 @@ class Transpiler {
         $this->baseEnvFile = $baseEnvFile;
     }
 
-    public function transpile($profileFile, $destFile)
+    /**
+     * set DirMode
+     *
+     * @param bool $dirMode dirMode
+     *
+     * @return void
+     */
+    public function setDirMode($dirMode)
+    {
+        $this->dirMode = $dirMode;
+    }
+
+    public function transpile($profileFile, $destFile, $envFilename = null)
     {
         $profile = Yaml::parseFile($profileFile);
 
@@ -156,9 +173,11 @@ class Transpiler {
         $this->logger->info('Wrote file "'.$destFile.'"');
 
         // write env file
-        $envFilename = $destFile;
-        if (substr($envFilename, -4) == '.yml') {
-            $envFilename = substr($envFilename, 0,-4).'.env';
+        if (is_null($envFilename)) {
+            $envFilename = $destFile;
+            if (substr($envFilename, -4) == '.yml') {
+                $envFilename = substr($envFilename, 0, -4) . '.env';
+            }
         }
         $this->generateEnvFile($envFilename, $renderedYaml);
         $this->logger->info('Wrote file "'.$envFilename.'"');

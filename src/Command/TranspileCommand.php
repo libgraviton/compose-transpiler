@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -73,8 +74,8 @@ class TranspileCommand extends Command
         }
 
         $defFile = $input->getArgument('defFile');
-        if (!file_exists($defFile)) {
-            throw new \LogicException('File "'.$defFile.'" does not exist.');
+        if (!file_exists($defFile) && !is_dir($defFile)) {
+            throw new \LogicException('File/Directory "'.$defFile.'" does not exist.');
         }
 
         $t = new \Graviton\ComposeTranspiler\Transpiler($templateDir, $output);
@@ -95,6 +96,26 @@ class TranspileCommand extends Command
             $t->setBaseEnvFile($baseEnvFile);
         }
 
-        $t->transpile($defFile, $input->getArgument('outFile'));
+        // dir or file?
+        if (!is_dir($defFile)) {
+            $t->transpile($defFile, $input->getArgument('outFile'));
+        } else {
+            $finder = Finder::create()
+                ->in($defFile)
+                ->files()
+                ->ignoreDotFiles(true)
+                ->name("*.yml");
+
+            $outDir = $input->getArgument('outFile');
+            if (substr($outDir, -1) != '/') {
+                $outDir .= '/';
+            }
+
+            foreach ($finder as $file) {
+                $t->transpile($file->getPathname(), $outDir.$file->getFilename(), $outDir.'dist.env');
+            }
+        }
+
+
     }
 }
