@@ -10,6 +10,7 @@ use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -270,12 +271,17 @@ class Transpiler {
      * @throws \Twig_Error_Loader
      * @throws \Twig_Error_Runtime
      * @throws \Twig_Error_Syntax
+     * @throws \Exception
      */
     private function getSingleFile($file, $data = [], $isYaml = true)
     {
         $file = $this->twig->load($file)->render($data);
         if ($isYaml) {
-            return Yaml::parse($file);
+            try {
+                return Yaml::parse($file);
+            } catch (ParseException $e) {
+                throw new \Exception("Error in YML parsing with body = ".$file, 0, $e);
+            }
         }
         return $file;
     }
