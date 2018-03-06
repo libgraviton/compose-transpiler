@@ -161,10 +161,12 @@ class Transpiler {
 
         // get footer..
         $footerTemplate = 'footer';
+        // additional data for footer
+        $footerData = ['recipe' => $recipe];
         if (isset($profile['footer']) && is_array($profile['footer'])) {
-            $footer = $this->getBaseTemplate($footerTemplate, $profile['footer']);
+            $footer = $this->getBaseTemplate($footerTemplate, array_merge($profile['footer'], $footerData));
         } else {
-            $footer = $this->getBaseTemplate($footerTemplate, []);
+            $footer = $this->getBaseTemplate($footerTemplate, $footerData);
         }
 
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
@@ -186,7 +188,7 @@ class Transpiler {
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
             $baseScriptData = [
-                'recipe' =>Yaml::parse($renderedYaml),
+                'recipe' => Yaml::parse($renderedYaml),
                 'recipePath' => $destFile,
                 'envFilePath' => $envFilename
             ];
@@ -230,7 +232,7 @@ class Transpiler {
                 if (is_null($mixinData)) {
                     $mixinData = [];
                 }
-                $mixin = $this->getSingleFile($this->mixinsDir.$mixinName.'.tmpl.yml', $mixinData);
+                $mixin = $this->getSingleFile($this->mixinsDir.$mixinName.'.tmpl.yml', array_merge($data, $mixinData));
                 $base = \Ckr\Util\ArrayMerger::doMerge($base, $mixin);
             }
         }
