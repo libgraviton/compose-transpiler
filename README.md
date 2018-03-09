@@ -1,5 +1,10 @@
 ## compose transpiler
 
+[![Travis](https://img.shields.io/travis/libgraviton/compose-transpiler.svg)](https://travis-ci.org/libgraviton/compose-transpiler)
+[![Docker Pulls](https://img.shields.io/docker/pulls/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+[![Docker Stars](https://img.shields.io/docker/stars/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+[![Docker Automated](https://img.shields.io/docker/automated/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+
 A small script that transpiles yaml structures (like compose files) from templates.
 
 You create a basic directory structure for the templates:
