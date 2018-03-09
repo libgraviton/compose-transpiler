@@ -5,6 +5,7 @@
 namespace Graviton\ComposeTranspiler;
 
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
+use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -115,7 +116,7 @@ class Transpiler {
 
     public function transpile($profileFile, $destFile, $envFilename = null)
     {
-        $profile = Yaml::parseFile($profileFile);
+        $profile = (new ProfileResolver($profileFile))->resolve();
 
         // if we find that we have 'version' and 'services' in our file, we assume it's already a recipe -> just output
         if (isset($profile['version']) && isset($profile['services'])) {
