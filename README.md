@@ -7,6 +7,17 @@
 
 A small script that transpiles yaml structures (like compose files) from templates.
 
+The main use case for this script is to reduce repetition in YAML structures such as Docker Compose and/or _stack files_
+within a setup that has many different stages and/or tenants. In such a setup, many configurations are basically the same
+but different for each tenant/stage. 
+
+This scripts helps to cover all that while still not repeat yourself to death and making errors while doing that.
+
+This transpiler takes a _profile_ (which can inherit/extend another one) and with the help from the templates generate a 
+fully valid Docker Compose / Stack file for Docker Swarm (v12.0+).
+
+### Prereqs
+
 You create a basic directory structure for the templates:
 
 ```
