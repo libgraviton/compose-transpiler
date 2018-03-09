@@ -6,7 +6,7 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
      *
      * @dataProvider dataProvider
      */
-    public function testTranspiling($filename, $releaseFile = null)
+    public function testTranspiling($filename, $releaseFile = null, $envFileAsserts = [], $baseEnvFile = null)
     {
         $sut = new \Graviton\ComposeTranspiler\Transpiler(
             __DIR__.'/resources/_templates',
@@ -17,12 +17,23 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
             $sut->setReleaseFile($releaseFile);
         }
 
+        if (!is_null($baseEnvFile)) {
+            $sut->setBaseEnvFile($baseEnvFile);
+        }
+
         $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
 
         $contents = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/gen.yml');
         $expected = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
 
+        foreach ($envFileAsserts as $envFileAssert) {
+            $this->assertContains($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
+        }
+
         $this->assertEquals($expected, $contents);
+
+        unlink(__DIR__.'/gen.yml');
+        unlink(__DIR__.'/gen.env');
     }
 
     public function dataProvider()
@@ -37,6 +48,33 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
             ],
             [
                 "app3.yml",
+            ],
+            [
+                "app4withenv.yml",
+                null,
+                [
+                    ''
+                ]
+            ],
+            [
+                "app4withenv.yml",
+                null,
+                [
+                    'FERDINAND=',
+                    'HANS=',
+                    'FRED='
+                ]
+            ],
+            [
+                "app4withenv.yml",
+                null,
+                [
+                    'FERDINAND=',
+                    'HANS=hans',
+                    'FRED=fred',
+                    'this is a comment'
+                ],
+                __DIR__.'/resources/envFiles/baseEnv.env'
             ]
         ];
     }

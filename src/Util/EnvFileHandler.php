@@ -63,8 +63,6 @@ class EnvFileHandler
         return $lines;
     }
 
-
-
     private function existingFileAdd($values, $filename)
     {
         $lines = $this->getValuesFromFile($filename);
