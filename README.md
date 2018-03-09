@@ -39,7 +39,7 @@ environment:
   VAR1=a
 ```
 
-You can now write a file for the transpiler:
+You can now write a file for the transpiler (called a _profile_):
 
 `./myapp.yml`
 ```yaml
@@ -178,3 +178,57 @@ components:
 
 And you will have `myVar` and `whatEverValue` available as Twig variables in
 your `redis.tmpl.yml` template.
+
+### Profile inheritance
+
+Profiles can inherit from each other. Given a base file:
+
+`./myapp.yml`
+```yaml
+components:
+  redis:
+  mysql:
+``` 
+
+Another file can extend that file using the special `_inheritance` key:
+
+`./myapp-other.yml`
+```yaml
+_inheritance:
+  extends: ./myapp.yml
+components:
+  postgres:
+```
+
+The result will then be:
+
+```yaml
+components:
+  redis:
+  mysql:
+  postgres:
+```
+
+and then it will be transpiled with that profile.
+
+You can also unset paths in the parent profile(s). Taken the above example, `./myapp-other.yml` could be:
+
+`./myapp-other.yml`
+```yaml
+_inheritance:
+  extends: ./myapp.yml
+  unsets:
+    - "components.mysql"
+components:
+  postgres:
+```
+
+Which will then result in:
+
+```yaml
+components:
+  redis:
+  postgres:
+```
+
+You can "unset" all simple paths by using dot notation. There is no support for more complex operations then a dot.
