@@ -34,6 +34,9 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
             ],
             [
                 "app2.yml",
+            ],
+            [
+                "app3.yml",
             ]
         ];
     }

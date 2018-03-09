@@ -1,9 +1,10 @@
 version: 99
 services:
-  memcached:
-    image: 'memcached:latest'
   fred:
     image: 'fred:latest'
+  memcached:
+    image: memcached:latest
+
 networks:
   internal:
     external: false

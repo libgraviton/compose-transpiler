@@ -1,0 +1,4 @@
+_inheritance:
+  extends: ./parentfile/subdir/app3parent.yml
+  unsets:
+    - "components.hans"

@@ -1,0 +1,5 @@
+_inheritance:
+  extends: ./another/subdir/app3parentparent.yml
+components:
+  fred:
+  hans:
