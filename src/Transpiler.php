@@ -305,7 +305,12 @@ class Transpiler {
 
             foreach (file($this->releaseFile) as $release) {
                 $releaseParts = explode(":", trim($release));
-                $content = str_replace($releaseParts[0].':${TAG}', trim($release), $content);
+
+                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@i';
+                // now replace all "\*" (wildcards in release file) with the real wildcard
+                $pattern = str_replace('\*', '.*', $pattern);
+
+                $content = preg_replace($pattern, '$1:'.$releaseParts[1], $content);
             }
         }
 

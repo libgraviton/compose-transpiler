@@ -9,6 +9,8 @@ services:
     image: 'hans:2.0.0'
     addedKey: yeah
     oneMoreKey: why
+  my-setup:
+    image: 'org/xckb-setup:3.0.0'
 networks:
   internal:
     external: false
