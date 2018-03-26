@@ -188,10 +188,21 @@ class Transpiler {
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
+
+            $parsedYaml = Yaml::parse($renderedYaml);
+
+            // compose image list
+            $imageList = [];
+            foreach ($parsedYaml['services'] as $service) {
+                $imageList[] = $service['image'];
+            }
+
             $baseScriptData = [
                 'recipe' => Yaml::parse($renderedYaml),
                 'recipePath' => $destFile,
-                'envFilePath' => $envFilename
+                'envFilePath' => $envFilename,
+                'imageList' => $imageList,
+                'imageListUnique' => array_unique($imageList)
             ];
 
             foreach ($profile['scripts'] as $scriptName => $scriptData) {
