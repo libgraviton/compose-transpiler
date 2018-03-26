@@ -114,6 +114,11 @@ class TranspileCommand extends Command
             foreach ($finder as $file) {
                 $t->transpile($file->getPathname(), $outDir.$file->getFilename(), $outDir.'dist.env');
             }
+
+            // render relese id if given
+            if (!is_null($releaseFile)) {
+                file_put_contents($outDir.'release-id.release', basename($releaseFile));
+            }
         }
 
 
