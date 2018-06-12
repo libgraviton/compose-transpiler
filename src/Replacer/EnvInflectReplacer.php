@@ -42,7 +42,7 @@ class EnvInflectReplacer extends ReplacerAbstract
     protected function replace($content)
     {
         // get all envs vars
-        preg_match_all('/\$\{([[:word:][:punct:]\:\-\_]*)\}/iU', $content, $matches, PREG_SET_ORDER);
+        preg_match_all('/\$\{([[:word:][:print:]\:\-\_]*)\}/iU', $content, $matches, PREG_SET_ORDER);
 
         if (empty($matches)) {
             return $content;
