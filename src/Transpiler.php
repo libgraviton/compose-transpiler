@@ -4,6 +4,9 @@
  */
 namespace Graviton\ComposeTranspiler;
 
+use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
+use Graviton\ComposeTranspiler\Replacer\ReplacerAbstract;
+use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Psr\Log\LoggerInterface;
@@ -61,10 +64,21 @@ class Transpiler {
      */
     private $twig;
 
+    /**
+     * if we should inflect (= replace ENV values in yml instead of writing it into env file)
+     *
+     * @var bool
+     */
+    private $inflect = false;
+
     private $releaseFile;
     private $envFileName;
     private $baseEnvFile;
-    private $inflectEnvFile;
+
+    /**
+     * @var ReplacerAbstract[] $replacers
+     */
+    private $replacers = [];
 
     public function __construct($baseDir, OutputInterface $output)
     {
@@ -118,15 +132,15 @@ class Transpiler {
     }
 
     /**
-     * set InflectEnvFile
+     * set Inflect
      *
-     * @param mixed $inflectEnvFile inflectEnvFile
+     * @param bool $inflect inflect
      *
      * @return void
      */
-    public function setInflectEnvFile($inflectEnvFile)
+    public function setInflect($inflect)
     {
-        $this->inflectEnvFile = $inflectEnvFile;
+        $this->inflect = $inflect;
     }
 
     /**
@@ -214,10 +228,6 @@ class Transpiler {
         // write generated yaml file
         $renderedYaml = $this->dumpYaml($recipe, $destFile);
         $this->logger->info('Wrote file "'.$destFile.'"');
-
-        // generate env file
-        $this->generateEnvFile($destFile, $renderedYaml);
-        $this->logger->info('Wrote file "'.$this->envFileName.'"');
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
@@ -348,41 +358,6 @@ class Transpiler {
     }
 
     /**
-     * replaces all ${TAG} variables with the content from the release file
-     *
-     * @param string $content the compile compose recipe
-     * @return mixed replaced
-     * @throws \Exception
-     */
-    private function replaceReleaseTags($content)
-    {
-        if (!is_null($this->releaseFile)) {
-            if (!file_exists($this->releaseFile)) {
-                throw new \Exception("File '".$this->releaseFile."' does not exist");
-            }
-
-            foreach (file($this->releaseFile) as $release) {
-                $releaseParts = explode(":", trim($release));
-
-                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@i';
-                // now replace all "\*" (wildcards in release file) with the real wildcard
-                $pattern = str_replace('\*', '.*', $pattern);
-
-                $content = preg_replace($pattern, '$1:'.$releaseParts[1], $content);
-            }
-        }
-
-        // replace missing ${TAG} mit notice!
-        preg_match_all('/([a-z0-9-_]*):\$\{TAG\}/i', $content, $matches);
-        foreach ($matches[0] as $matched) {
-            $this->logger->warning('Replace unset image '.$matched.' with "latest"!');
-            $content = str_replace($matched, str_replace('${TAG}', 'latest', $matched), $content);
-        }
-
-        return $content;
-    }
-
-    /**
      * generate the companion env file to the yml file
      *
      * @param string $destFile    destination file as fallback
@@ -438,13 +413,29 @@ class Transpiler {
      */
     private function dumpYaml($content, $file)
     {
+        // our replacers
+        $replacer = new VersionTagReplacer($this->releaseFile);
+        $replacer->setLogger($this->logger);
+        $content = $replacer->replaceArray($content);
+
+        if ($this->inflect) {
+            // inflect requested
+            $replacer = new EnvInflectReplacer($this->baseEnvFile);
+            $replacer->setLogger($this->logger);
+            $content = $replacer->replaceArray($content);
+        }
+
         $content = Yaml::dump($content, 99, 2,
             Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK +
             Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE +
             Yaml::DUMP_OBJECT_AS_MAP
         );
 
-        $content = $this->replaceReleaseTags($content);
+        // do we need to generate env file?
+        if (!$this->inflect) {
+            $this->generateEnvFile($file, $content);
+            $this->logger->info('Wrote file "' . $this->envFileName . '"');
+        }
 
         if ($file == '-') { // stdout
             echo $content;
@@ -453,32 +444,5 @@ class Transpiler {
         }
 
         return $content;
-    }
-
-    /**
-     * here we let bash and php interpret the final values of a env file
-     * so we can get our values to replace them.
-     *
-     * @param string $file filename
-     *
-     * @return array the env
-     */
-    private function getInflectEnvFileContents($file)
-    {
-        $subCmd = [
-            'set -o allexport',
-            'source '.escapeshellarg($file),
-            'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
-        ];
-        $cmd = [
-            'bash',
-            '-c',
-            implode(';', $subCmd)
-        ];
-
-        $process = new Process($cmd);
-        $process->run();
-
-        return json_decode($process->getOutput());
     }
 }

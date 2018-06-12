@@ -51,10 +51,10 @@ class TranspileCommand extends Command
                 'Path to an optional release file - ${TAG} values will be replaced from this file.'
             )
             ->addOption(
-                'inflectEnvFile',
+                'inflect',
                 'i',
-                InputOption::VALUE_OPTIONAL,
-                'An optional file that contains ENV vars that will be directly replaced (inflected) in the generated yml.'
+                InputOption::VALUE_NONE,
+                'If given, values from env file will be replaced in the yml instead of generating an env file'
             )
             ->addOption(
                 'baseEnvFile',
@@ -102,13 +102,8 @@ class TranspileCommand extends Command
             $t->setBaseEnvFile($baseEnvFile);
         }
 
-        $inflectEnvFile = $input->getOption('inflectEnvFile');
-        if (!is_null($inflectEnvFile)) {
-            if (!file_exists($inflectEnvFile)) {
-                throw new \LogicException('File "'.$inflectEnvFile.'" does not exist.');
-            }
-            $t->setInflectEnvFile($inflectEnvFile);
-        }
+        // inflect option
+        $t->setInflect($input->getOption('inflect'));
 
         // dir or file?
         if (!is_dir($defFile)) {
@@ -137,7 +132,5 @@ class TranspileCommand extends Command
                 file_put_contents($outDir.'release-id.release', basename($releaseFile));
             }
         }
-
-
     }
 }
