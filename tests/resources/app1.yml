@@ -8,3 +8,4 @@ components:
     mixins:
       more:
         derDude: yes
+  my-setup:

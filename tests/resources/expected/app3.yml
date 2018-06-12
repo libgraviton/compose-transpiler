@@ -1,8 +1,10 @@
-version: 1
+version: 99
 services:
   fred:
     image: 'fred:latest'
-    addedKey: yeah
+  memcached:
+    image: memcached:latest
+
 networks:
   internal:
     external: false

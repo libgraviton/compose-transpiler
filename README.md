@@ -1,6 +1,22 @@
 ## compose transpiler
 
+[![Travis](https://img.shields.io/travis/libgraviton/compose-transpiler.svg)](https://travis-ci.org/libgraviton/compose-transpiler)
+[![Docker Pulls](https://img.shields.io/docker/pulls/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+[![Docker Stars](https://img.shields.io/docker/stars/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+[![Docker Automated](https://img.shields.io/docker/automated/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
+
 A small script that transpiles yaml structures (like compose files) from templates.
+
+The main use case for this script is to reduce repetition in YAML structures such as Docker Compose and/or _stack files_
+within a setup that has many different stages and/or tenants. In such a setup, many configurations are basically the same
+but different for each tenant/stage. 
+
+This scripts helps to cover all that while still not repeat yourself to death and making errors while doing that.
+
+This transpiler takes a _profile_ (which can inherit/extend another one) and with the help from the templates generate a 
+fully valid Docker Compose / Stack file for Docker Swarm (v12.0+).
+
+### Prereqs
 
 You create a basic directory structure for the templates:
 
@@ -39,7 +55,7 @@ environment:
   VAR1=a
 ```
 
-You can now write a file for the transpiler:
+You can now write a file for the transpiler (called a _profile_):
 
 `./myapp.yml`
 ```yaml
@@ -178,3 +194,57 @@ components:
 
 And you will have `myVar` and `whatEverValue` available as Twig variables in
 your `redis.tmpl.yml` template.
+
+### Profile inheritance
+
+Profiles can inherit from each other. Given a base file:
+
+`./myapp.yml`
+```yaml
+components:
+  redis:
+  mysql:
+``` 
+
+Another file can extend that file using the special `_inheritance` key:
+
+`./myapp-other.yml`
+```yaml
+_inheritance:
+  extends: ./myapp.yml
+components:
+  postgres:
+```
+
+The result will then be:
+
+```yaml
+components:
+  redis:
+  mysql:
+  postgres:
+```
+
+and then it will be transpiled with that profile.
+
+You can also unset paths in the parent profile(s). Taken the above example, `./myapp-other.yml` could be:
+
+`./myapp-other.yml`
+```yaml
+_inheritance:
+  extends: ./myapp.yml
+  unsets:
+    - "components.mysql"
+components:
+  postgres:
+```
+
+Which will then result in:
+
+```yaml
+components:
+  redis:
+  postgres:
+```
+
+You can "unset" all simple paths by using dot notation. There is no support for more complex operations then a dot.
