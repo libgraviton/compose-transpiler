@@ -1,0 +1,15 @@
+version: 99
+services:
+  variablecomp2:
+    image: 'variable:latest'
+    environment:
+      HANS: "hans"
+      FRED: "fred"
+      FERDINAND: "ferdi"
+      FERDINANDJSON: '{"value": "ferdi"}'
+      FERDINAND2: "22"
+      PRINCE: "harry://theman why not long value"
+
+networks:
+  internal:
+    external: false

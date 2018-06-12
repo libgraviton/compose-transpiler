@@ -6,8 +6,13 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
      *
      * @dataProvider dataProvider
      */
-    public function testTranspiling($filename, $releaseFile = null, $envFileAsserts = [], $baseEnvFile = null)
-    {
+    public function testTranspiling(
+        $filename,
+        $releaseFile = null,
+        $envFileAsserts = [],
+        $baseEnvFile = null,
+        $inflect = false
+    ) {
         $sut = new \Graviton\ComposeTranspiler\Transpiler(
             __DIR__.'/resources/_templates',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
@@ -21,6 +26,8 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
             $sut->setBaseEnvFile($baseEnvFile);
         }
 
+        $sut->setInflect($inflect);
+
         $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
 
         $contents = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/gen.yml');
@@ -33,7 +40,7 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals($expected, $contents);
 
         unlink(__DIR__.'/gen.yml');
-        unlink(__DIR__.'/gen.env');
+        if (!$inflect) unlink(__DIR__.'/gen.env');
     }
 
     public function dataProvider()
@@ -75,6 +82,14 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
                     'this is a comment'
                 ],
                 __DIR__.'/resources/envFiles/baseEnv.env'
+            ],
+            [
+                "app5withenv.yml",
+                null,
+                [
+                ],
+                __DIR__.'/resources/envFiles/baseEnvInflect.env',
+                true
             ]
         ];
     }
