@@ -3,12 +3,13 @@
     "license": "MIT",
     "require": {
         "symfony/yaml": "^4.0",
-        "twig/twig": "^2.4",
         "symfony/filesystem": "^4.0",
-        "ckr/arraymerger": "^2.0",
         "symfony/console": "^4.0",
+        "symfony/finder": "^4.0",
+        "twig/twig": "^2.4",
+        "ckr/arraymerger": "^2.0",
         "psr/log": "^1.0",
-        "symfony/finder": "^4.0"
+        "symfony/process": "^4.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.0"
