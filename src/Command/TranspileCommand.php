@@ -48,7 +48,13 @@ class TranspileCommand extends Command
                 'releaseFile',
                 'r',
                 InputOption::VALUE_OPTIONAL,
-                'Path to an optional release file - ${TAG} will be replaced from this file.'
+                'Path to an optional release file - ${TAG} values will be replaced from this file.'
+            )
+            ->addOption(
+                'inflectEnvFile',
+                'i',
+                InputOption::VALUE_OPTIONAL,
+                'An optional file that contains ENV vars that will be directly replaced (inflected) in the generated yml.'
             )
             ->addOption(
                 'baseEnvFile',
@@ -96,6 +102,14 @@ class TranspileCommand extends Command
             $t->setBaseEnvFile($baseEnvFile);
         }
 
+        $inflectEnvFile = $input->getOption('inflectEnvFile');
+        if (!is_null($inflectEnvFile)) {
+            if (!file_exists($inflectEnvFile)) {
+                throw new \LogicException('File "'.$inflectEnvFile.'" does not exist.');
+            }
+            $t->setInflectEnvFile($inflectEnvFile);
+        }
+
         // dir or file?
         if (!is_dir($defFile)) {
             $t->transpile($defFile, $input->getArgument('outFile'));
@@ -111,8 +125,11 @@ class TranspileCommand extends Command
                 $outDir .= '/';
             }
 
+            // same env file for all yml files
+            $t->setEnvFileName($outDir.'dist.env');
+
             foreach ($finder as $file) {
-                $t->transpile($file->getPathname(), $outDir.$file->getFilename(), $outDir.'dist.env');
+                $t->transpile($file->getPathname(), $outDir.$file->getFilename());
             }
 
             // render relese id if given

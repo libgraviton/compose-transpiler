@@ -11,6 +11,7 @@ use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -61,7 +62,9 @@ class Transpiler {
     private $twig;
 
     private $releaseFile;
+    private $envFileName;
     private $baseEnvFile;
+    private $inflectEnvFile;
 
     public function __construct($baseDir, OutputInterface $output)
     {
@@ -91,6 +94,18 @@ class Transpiler {
     }
 
     /**
+     * set EnvFileName
+     *
+     * @param mixed $envFileName envFileName
+     *
+     * @return void
+     */
+    public function setEnvFileName($envFileName)
+    {
+        $this->envFileName = $envFileName;
+    }
+
+    /**
      * set BaseEnvFile
      *
      * @param mixed $baseEnvFile baseEnvFile
@@ -100,6 +115,18 @@ class Transpiler {
     public function setBaseEnvFile($baseEnvFile)
     {
         $this->baseEnvFile = $baseEnvFile;
+    }
+
+    /**
+     * set InflectEnvFile
+     *
+     * @param mixed $inflectEnvFile inflectEnvFile
+     *
+     * @return void
+     */
+    public function setInflectEnvFile($inflectEnvFile)
+    {
+        $this->inflectEnvFile = $inflectEnvFile;
     }
 
     /**
@@ -114,7 +141,19 @@ class Transpiler {
         $this->dirMode = $dirMode;
     }
 
-    public function transpile($profileFile, $destFile, $envFilename = null)
+    /**
+     * transpile a single file
+     *
+     * @param string $profileFile the profile file specifying what components this consists of
+     * @param string $destFile where to generate to
+     *
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
+     *
+     * @return bool
+     */
+    public function transpile($profileFile, $destFile)
     {
         $profile = (new ProfileResolver($profileFile))->resolve();
 
@@ -176,15 +215,9 @@ class Transpiler {
         $renderedYaml = $this->dumpYaml($recipe, $destFile);
         $this->logger->info('Wrote file "'.$destFile.'"');
 
-        // write env file
-        if (is_null($envFilename)) {
-            $envFilename = $destFile;
-            if (substr($envFilename, -4) == '.yml') {
-                $envFilename = substr($envFilename, 0, -4) . '.env';
-            }
-        }
-        $this->generateEnvFile($envFilename, $renderedYaml);
-        $this->logger->info('Wrote file "'.$envFilename.'"');
+        // generate env file
+        $this->generateEnvFile($destFile, $renderedYaml);
+        $this->logger->info('Wrote file "'.$this->envFileName.'"');
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
@@ -200,7 +233,7 @@ class Transpiler {
             $baseScriptData = [
                 'recipe' => Yaml::parse($renderedYaml),
                 'recipePath' => $destFile,
-                'envFilePath' => $envFilename,
+                'envFilePath' => $this->envFileName,
                 'imageList' => $imageList,
                 'imageListUnique' => array_unique($imageList)
             ];
@@ -221,7 +254,6 @@ class Transpiler {
                 $this->logger->info('Wrote "'.$scriptDestination.'"');
             }
         }
-
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -234,6 +266,18 @@ class Transpiler {
         return $this->resolveSingleComponent($this->baseTmplDir.$defaultTemplate.'.tmpl.yml', $data);
     }
 
+    /**
+     * returns the array structure for a given file and component, applying all specified mixins and additions
+     *
+     * @param string $file the file
+     * @param array  $data the data from the profile
+     *
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
+     *
+     * @return array the final structure
+     */
     private function resolveSingleComponent($file, $data = [])
     {
         $base = $this->getSingleFile($file, $data);
@@ -264,10 +308,11 @@ class Transpiler {
      * @param $currentServiceName
      * @param $data
      *
-     * @return service array with exposed added
      * @throws \Twig_Error_Loader
      * @throws \Twig_Error_Runtime
      * @throws \Twig_Error_Syntax
+     *
+     * @return service array with exposed added
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
@@ -281,11 +326,13 @@ class Transpiler {
      *
      * @param string $file template
      * @param array $data data
-     * @return mixed
+     *
      * @throws \Twig_Error_Loader
      * @throws \Twig_Error_Runtime
      * @throws \Twig_Error_Syntax
      * @throws \Exception
+     *
+     * @return mixed
      */
     private function getSingleFile($file, $data = [], $isYaml = true)
     {
@@ -335,8 +382,23 @@ class Transpiler {
         return $content;
     }
 
-    private function generateEnvFile($file, $content)
+    /**
+     * generate the companion env file to the yml file
+     *
+     * @param string $destFile    destination file as fallback
+     * @param string $content the yml content
+     */
+    private function generateEnvFile($destFile, $content)
     {
+        // check filename
+        if (is_null($this->envFileName)) {
+            $envFile = $destFile;
+            if (substr($envFile, -4) == '.yml') {
+                $envFile = substr($envFile, 0, -4) . '.env';
+            }
+            $this->envFileName = $envFile;
+        }
+
         preg_match_all('/\$\{([a-z0-9_-]*)\}/i', $content, $matches);
 
         $vars = array_unique($matches[1]);
@@ -357,13 +419,23 @@ class Transpiler {
         if ($this->baseEnvFile) {
             $this->envFileHandler->writeEnvFromArrayNoOverwrite(
                 $this->envFileHandler->getValuesFromFile($this->baseEnvFile),
-                $file
+                $this->envFileName
             );
         }
 
-        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $file);
+        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $this->envFileName);
     }
 
+    /**
+     * dumps a yaml file in a nicely formatted way
+     *
+     * @param array  $content the content
+     * @param string $file    target file
+     *
+     * @throws \Exception
+     *
+     * @return mixed|string
+     */
     private function dumpYaml($content, $file)
     {
         $content = Yaml::dump($content, 99, 2,
@@ -381,5 +453,32 @@ class Transpiler {
         }
 
         return $content;
+    }
+
+    /**
+     * here we let bash and php interpret the final values of a env file
+     * so we can get our values to replace them.
+     *
+     * @param string $file filename
+     *
+     * @return array the env
+     */
+    private function getInflectEnvFileContents($file)
+    {
+        $subCmd = [
+            'set -o allexport',
+            'source '.escapeshellarg($file),
+            'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
+        ];
+        $cmd = [
+            'bash',
+            '-c',
+            implode(';', $subCmd)
+        ];
+
+        $process = new Process($cmd);
+        $process->run();
+
+        return json_decode($process->getOutput());
     }
 }
