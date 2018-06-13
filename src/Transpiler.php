@@ -437,29 +437,31 @@ class Transpiler {
 
         $content = $this->reallyDumpYml($content);
 
-        // final replacers there?
-        if (!empty($this->finalRegexes)) {
-            foreach ($this->finalRegexes as $pattern) {
-                $patternParts = explode('::', $pattern);
-                if (count($patternParts) != 2) {
-                    $this->logger->error('Regex pattern "'.$pattern.'" has wrong form, check help');
-                }
-                $content = preg_replace($patternParts[0], $patternParts[1], $content);
-            }
-        }
-
         // do we need to generate env file?
         if (!$this->inflect) {
             $this->generateEnvFile($file, $content);
             $this->logger->info('Wrote file "' . $this->envFileName . '"');
         }
 
-        if ($file == '-') { // stdout
-            echo $content;
-        } else {
-            $this->fs->dumpFile($file, $content);
+        // final replacers there?
+        $fileContent = $content;
+        if (!empty($this->finalRegexes)) {
+            foreach ($this->finalRegexes as $pattern) {
+                $patternParts = explode('::', $pattern);
+                if (count($patternParts) != 2) {
+                    $this->logger->error('Regex pattern "'.$pattern.'" has wrong form, check help');
+                }
+                $fileContent = preg_replace($patternParts[0], $patternParts[1], $fileContent);
+            }
         }
 
+        if ($file == '-') { // stdout
+            echo $fileContent;
+        } else {
+            $this->fs->dumpFile($file, $fileContent);
+        }
+
+        // return content WITHOUT finalRegexes (so templates have access to all)
         return $content;
     }
 
