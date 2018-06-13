@@ -14,6 +14,8 @@ class VersionTagReplacer extends ReplacerAbstract
 {
 
     private $releaseFile;
+    private $patterns = [];
+    private $checkString = '${TAG}';
 
     public function __construct($releaseFile)
     {
@@ -22,17 +24,7 @@ class VersionTagReplacer extends ReplacerAbstract
 
     public function init()
     {
-    }
-
-    /**
-     * replaces all ${TAG} variables with the content from the release file
-     *
-     * @param string $content the compile compose recipe
-     * @return mixed replaced
-     * @throws \Exception
-     */
-    protected function replace($content)
-    {
+        // prepare patterns
         if (!is_null($this->releaseFile)) {
             if (!file_exists($this->releaseFile)) {
                 throw new \Exception("File '".$this->releaseFile."' does not exist");
@@ -45,8 +37,26 @@ class VersionTagReplacer extends ReplacerAbstract
                 // now replace all "\*" (wildcards in release file) with the real wildcard
                 $pattern = str_replace('\*', '.*', $pattern);
 
-                $content = preg_replace($pattern, '$1:'.$releaseParts[1], $content);
+                $this->patterns[$pattern] = $releaseParts[1];
             }
+        }
+    }
+
+    /**
+     * replaces all ${TAG} variables with the content from the release file
+     *
+     * @param string $content the compile compose recipe
+     * @return mixed replaced
+     * @throws \Exception
+     */
+    protected function replace($content)
+    {
+        if (strpos($content, $this->checkString) === false) {
+            return $content;
+        }
+
+        foreach ($this->patterns as $pattern => $version) {
+            $content = preg_replace($pattern, '$1:'.$version, $content);
         }
 
         // replace missing ${TAG} mit notice!
@@ -58,5 +68,4 @@ class VersionTagReplacer extends ReplacerAbstract
 
         return $content;
     }
-
 }

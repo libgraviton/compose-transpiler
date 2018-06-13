@@ -75,11 +75,6 @@ class Transpiler {
     private $envFileName;
     private $baseEnvFile;
 
-    /**
-     * @var ReplacerAbstract[] $replacers
-     */
-    private $replacers = [];
-
     public function __construct($baseDir, OutputInterface $output)
     {
         $this->baseDir = $baseDir;

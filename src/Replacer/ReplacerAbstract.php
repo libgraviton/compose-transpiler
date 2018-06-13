@@ -22,7 +22,7 @@ abstract class ReplacerAbstract {
     private function replaceValuesInArray(array $content) {
         foreach ($content as $key => $val) {
             if (is_array($val)) {
-                $content[$key] = $this->replaceArray($val);
+                $content[$key] = $this->replaceValuesInArray($val);
             } elseif (is_null($val)) {
                 $content[$key] = null;
             } else {
