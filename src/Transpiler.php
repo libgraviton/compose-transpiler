@@ -71,6 +71,13 @@ class Transpiler {
      */
     private $inflect = false;
 
+    /**
+     * stuff that is replaced at the end of the generation
+     *
+     * @var array
+     */
+    private $finalRegexes = [];
+
     private $releaseFile;
     private $envFileName;
     private $baseEnvFile;
@@ -136,6 +143,14 @@ class Transpiler {
     public function setInflect($inflect)
     {
         $this->inflect = $inflect;
+    }
+
+    /**
+     * @param array $finalRegexes
+     */
+    public function setFinalRegexes(array $finalRegexes)
+    {
+        $this->finalRegexes = $finalRegexes;
     }
 
     /**
@@ -420,11 +435,18 @@ class Transpiler {
             $content = $replacer->replaceArray($content);
         }
 
-        $content = Yaml::dump($content, 99, 2,
-            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK +
-            Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE +
-            Yaml::DUMP_OBJECT_AS_MAP
-        );
+        $content = $this->reallyDumpYml($content);
+
+        // final replacers there?
+        if (!empty($this->finalRegexes)) {
+            foreach ($this->finalRegexes as $pattern) {
+                $patternParts = explode('::', $pattern);
+                if (count($patternParts) != 2) {
+                    $this->logger->error('Regex pattern "'.$pattern.'" has wrong form, check help');
+                }
+                $content = preg_replace($patternParts[0], $patternParts[1], $content);
+            }
+        }
 
         // do we need to generate env file?
         if (!$this->inflect) {
@@ -439,5 +461,14 @@ class Transpiler {
         }
 
         return $content;
+    }
+
+    private function reallyDumpYml($content)
+    {
+        return Yaml::dump($content, 99, 2,
+            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK +
+            Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE +
+            Yaml::DUMP_OBJECT_AS_MAP
+        );
     }
 }
