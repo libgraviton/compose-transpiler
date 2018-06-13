@@ -8,7 +8,10 @@ services:
       FERDINAND: "ferdi"
       FERDINANDJSON: '{"value": "ferdi"}'
       FERDINAND2: "22"
+      PORT: 22
       PRINCE: "harry://theman why not long value"
+    subobject:
+      anotherInt: 2222
 
 networks:
   internal:
