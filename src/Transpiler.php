@@ -5,7 +5,6 @@
 namespace Graviton\ComposeTranspiler;
 
 use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
-use Graviton\ComposeTranspiler\Replacer\ReplacerAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
@@ -14,7 +13,6 @@ use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -189,6 +187,11 @@ class Transpiler {
                 $this->fs->copy($profileFile, $destFile);
             }
             return true;
+        }
+
+        // check for final regexes
+        if (is_array($profile['finalRegexes'])) {
+            $this->setFinalRegexes($profile['finalRegexes']);
         }
 
         // get header..
@@ -445,7 +448,7 @@ class Transpiler {
 
         // final replacers there?
         $fileContent = $content;
-        if (!empty($this->finalRegexes)) {
+        if (is_array($this->finalRegexes) && !empty($this->finalRegexes)) {
             foreach ($this->finalRegexes as $pattern) {
                 $patternParts = explode('::', $pattern);
                 if (count($patternParts) != 2) {
