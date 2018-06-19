@@ -190,7 +190,7 @@ class Transpiler {
         }
 
         // check for final regexes
-        if (is_array($profile['finalRegexes'])) {
+        if (isset($profile['finalRegexes']) && is_array($profile['finalRegexes'])) {
             $this->setFinalRegexes($profile['finalRegexes']);
         }
 
