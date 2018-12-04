@@ -229,7 +229,7 @@ class Transpiler {
         // get footer..
         $footerTemplate = 'footer';
         // additional data for footer
-        $footerData = ['recipe' => $recipe];
+        $footerData = ['profile' => $profile, 'recipe' => $recipe];
         if (isset($profile['footer']) && is_array($profile['footer'])) {
             $footer = $this->getBaseTemplate($footerTemplate, array_merge($profile['footer'], $footerData));
         } else {
