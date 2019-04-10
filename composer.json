@@ -9,7 +9,11 @@
         "twig/twig": "^2.4",
         "ckr/arraymerger": "^2.0",
         "psr/log": "^1.0",
-        "symfony/process": "^4.1"
+        "symfony/process": "^4.1",
+        "php-http/discovery": "^1.6",
+        "guzzlehttp/psr7": "^1.5",
+        "php-http/guzzle6-adapter": "^2.0",
+        "nyholm/psr7": "^1.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.0"
