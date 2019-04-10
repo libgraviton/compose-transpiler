@@ -2,3 +2,5 @@
 vendor
 example-*
 run_*
+.phpunit*
+coverage

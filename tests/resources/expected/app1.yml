@@ -5,6 +5,10 @@ services:
     addedKey: yeah
   fred-expose:
     image: 'nginx:5.5.5'
+  fred2:
+    image: 'fred:latest'
+  fred-fresh:
+    image: 'fred:latest'
   hans:
     image: 'hans:2.0.0'
     addedKey: yeah
@@ -14,3 +18,4 @@ services:
 networks:
   internal:
     external: false
+addedKey: yeah

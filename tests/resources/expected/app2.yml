@@ -3,6 +3,7 @@ services:
   fred:
     image: 'fred:latest'
     addedKey: yeah
+    literalDude: [1, 2]
 networks:
   internal:
     external: false

@@ -1,0 +1,12 @@
+
+{% for image in imageList %}
+{{ image }}
+{% endfor %}
+
+{% for component in recipe.services %}
+{{ component.image }}
+{% endfor %}
+
+{% for image in imageListUnique %}
+{{ image }}
+{% endfor %}

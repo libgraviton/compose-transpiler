@@ -17,7 +17,8 @@ class TranspilerTest extends TestCase {
         $releaseFile = null,
         $envFileAsserts = [],
         $baseEnvFile = null,
-        $inflect = false
+        $inflect = false,
+        $expectedScripts = []
     ) {
         $sut = new Transpiler(
             __DIR__.'/resources/_templates',
@@ -45,6 +46,12 @@ class TranspilerTest extends TestCase {
 
         $this->assertEquals($expected, $contents);
 
+        // check for scripts if defined. 'key' is generated file, 'value' is what we expect..
+        foreach ($expectedScripts as $genScript => $expectedScript) {
+            $this->assertFileEquals($expectedScript, $genScript);
+            unlink($genScript);
+        }
+
         unlink(__DIR__.'/gen.yml');
         if (!$inflect) unlink(__DIR__.'/gen.env');
     }
@@ -54,7 +61,13 @@ class TranspilerTest extends TestCase {
         return [
             [
                 "app1.yml",
-                __DIR__.'/resources/releaseFile'
+                __DIR__.'/resources/releaseFile',
+                [],
+                null,
+                false,
+                [
+                    __DIR__.'/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
+                ]
             ],
             [
                 "app2.yml",
