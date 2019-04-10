@@ -15,6 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -91,8 +93,8 @@ class Transpiler {
         $this->fs = new Filesystem();
         $this->envFileHandler = new EnvFileHandler($this->logger);
 
-        $loader = new \Twig_Loader_Filesystem($this->baseDir);
-        $this->twig = new \Twig_Environment($loader);
+        $loader = new FilesystemLoader($this->baseDir);
+        $this->twig = new Environment($loader);
     }
 
     /**
