@@ -1,6 +1,12 @@
 <?php
 
-class TranspilerTest extends \PHPUnit\Framework\TestCase {
+namespace Graviton\ComposeTranspilerTest;
+
+use Graviton\ComposeTranspiler\Transpiler;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Yaml\Yaml;
+
+class TranspilerTest extends TestCase {
 
     /**
      *
@@ -13,7 +19,7 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
         $baseEnvFile = null,
         $inflect = false
     ) {
-        $sut = new \Graviton\ComposeTranspiler\Transpiler(
+        $sut = new Transpiler(
             __DIR__.'/resources/_templates',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
@@ -30,11 +36,11 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
 
         $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
 
-        $contents = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/gen.yml');
-        $expected = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
+        $contents = Yaml::parseFile(__DIR__.'/gen.yml');
+        $expected = Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
 
         foreach ($envFileAsserts as $envFileAssert) {
-            $this->assertContains($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
+            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
         }
 
         $this->assertEquals($expected, $contents);

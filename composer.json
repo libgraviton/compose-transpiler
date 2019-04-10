@@ -15,7 +15,10 @@
         "phpunit/phpunit": "^8.0"
     },
     "autoload": {
-        "psr-4": {"Graviton\\ComposeTranspiler\\": "src/"}
+        "psr-4": {
+            "Graviton\\ComposeTranspiler\\": "src/",
+            "Graviton\\ComposeTranspilerTest\\": "tests/"
+        }
     },
     "authors": [
         {
