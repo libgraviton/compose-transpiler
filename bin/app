@@ -5,7 +5,6 @@ require __DIR__.'/../vendor/autoload.php';
 use Symfony\Component\Console\Application;
 
 $application = new Application('compose-transpiler');
-$command = new \Graviton\ComposeTranspiler\Command\TranspileCommand();
-$application->add($command);
-$application->setDefaultCommand($command->getName(), true);
+$application->add(new \Graviton\ComposeTranspiler\Command\TranspileCommand());
+$application->add(new \Graviton\ComposeTranspiler\Command\VerifyImagesCommand());
 $application->run();

@@ -1,15 +1,15 @@
 <?php
 /**
- * transpile command
+ * verify image existence command
  */
 namespace Graviton\ComposeTranspiler\Command;
 
+use Graviton\ComposeTranspiler\Util\RegistryRequestFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
 
@@ -22,6 +22,11 @@ class VerifyImagesCommand extends Command
 {
 
     /**
+     * @var RegistryRequestFactory
+     */
+    private $registryRequestFactory;
+
+    /**
      * Configures the current command.
      *
      * @return void
@@ -31,6 +36,12 @@ class VerifyImagesCommand extends Command
         $this
             ->setName('compose:verifyimages')
             ->setDescription('Verifies that all images mentioned in a directory exist.')
+            ->addOption(
+                'credentialFile',
+                'c',
+                InputOption::VALUE_REQUIRED,
+                'Path to registry auth file'
+            )
             ->addArgument(
                 'dir',
                 InputArgument::REQUIRED,
@@ -48,19 +59,45 @@ class VerifyImagesCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->registryRequestFactory = new RegistryRequestFactory($input->getOption('credentialFile'));
+
         $fs = Finder::create()
             ->files()
             ->in($input->getArgument('dir'))
             ->name('*.yml');
 
+        $images = [];
         foreach ($fs as $file) {
             $filename = $file->getPathname();
             $output->writeln("Parsing file '${filename}'");
-            $this->parseFile($filename, $output);
+
+            $images = array_merge(
+                $this->parseFile($filename, $output),
+                $images
+            );
+        }
+
+        $images = array_unique($images);
+        asort($images);
+
+        foreach ($images as $image) {
+            $output->write("Checking image '${image}'... ");
+
+            switch ($this->checkImage($image)) {
+                case null:
+                    $output->write('SKIPPED, CANNOT PARSE!', true);
+                    break;
+                case true:
+                    $output->write('OK!', true);
+                    break;
+                case false:
+                    $output->write('DOES NOT EXIST!', true);
+                    exit(-1);
+            }
         }
     }
 
-    private function parseFile($filename, OutputInterface $output)
+    private function parseFile($filename)
     {
         $images = [];
         $content = Yaml::parseFile($filename);
@@ -72,32 +109,24 @@ class VerifyImagesCommand extends Command
             }
         }
 
-        var_dump($images);
+        return $images;
     }
 
     private function checkImage($imageName)
     {
-// https://hackernoon.com/inspecting-docker-images-without-pulling-them-4de53d34a604
+        $client = $this->registryRequestFactory->getHttpClient();
 
-        /*
-        $client = \Http\Discovery\HttpClientDiscovery::find();
-        $requestFactory = \Http\Discovery\Psr17FactoryDiscovery::findRequestFactory();
-
-        $image = 'comp/mongodb';
-        $tag = 'v4.01';
-
-        $request = $requestFactory->createRequest('GET', 'https://registryUri/v2/'.$image.'/manifests/'.$tag);
-
-        $request = $request->withHeader('Accept', 'application/vnd.docker.distribution.manifest.v2+json')
-            ->withHeader('Authorization', 'Basic ');
+        $request = $this->registryRequestFactory->getVerifyImageRequest($imageName);
+        if ($request === null) {
+            return null;
+        }
 
         $resp = $client->sendRequest($request);
 
-        var_dump($resp->getBody()->getContents());
+        if ($resp->getStatusCode() == 200) {
+            return true;
+        }
 
-        var_dump($resp); die;
-
-        var_dump($requestFactory); die;
-        */
+        return false;
     }
 }
