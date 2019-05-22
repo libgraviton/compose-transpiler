@@ -8,6 +8,7 @@ use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
+use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -95,6 +96,7 @@ class Transpiler {
 
         $loader = new FilesystemLoader($this->baseDir);
         $this->twig = new Environment($loader);
+        $this->twig->addExtension(new Extension());
     }
 
     /**

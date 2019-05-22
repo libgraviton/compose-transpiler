@@ -1,0 +1,23 @@
+image: ymlenv
+environment:
+
+{%
+  set map = {
+  "hans": "fred",
+  "dude": "test",
+  "example": [1, 2],
+  "example2": {"key": "val"}
+}
+%}
+  MAP: '{{ map|yamlEnv() }}'
+
+{%
+set arr = [
+  '\\Namespace\\ClassName',
+  '\\Namespace\\ClassName2',
+  '\\Namespace2\\Class'
+]
+%}
+
+  ARRAY: '{{ arr|yamlEnv() }}'
+
