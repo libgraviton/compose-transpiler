@@ -109,6 +109,12 @@ class TranspilerTest extends TestCase {
                 ],
                 __DIR__.'/resources/envFiles/baseEnvInflect.env',
                 true
+            ],
+            [
+                "ymlenv.yml",
+                null,
+                [
+                ]
             ]
         ];
     }

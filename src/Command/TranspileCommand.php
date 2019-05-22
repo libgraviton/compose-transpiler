@@ -4,6 +4,7 @@
  */
 namespace Graviton\ComposeTranspiler\Command;
 
+use Graviton\ComposeTranspiler\Transpiler;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -91,7 +92,7 @@ class TranspileCommand extends Command
             throw new \LogicException('File/Directory "'.$defFile.'" does not exist.');
         }
 
-        $t = new \Graviton\ComposeTranspiler\Transpiler($templateDir, $output);
+        $t = new Transpiler($templateDir, $output);
 
         $releaseFile = $input->getOption('releaseFile');
         if (!is_null($releaseFile)) {
