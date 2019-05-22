@@ -2,7 +2,7 @@
     "name": "graviton/compose-transpiler",
     "license": "MIT",
     "require": {
-        "symfony/yaml": "^4.0",
+        "symfony/yaml": "^4.2",
         "symfony/filesystem": "^4.0",
         "symfony/console": "^4.0",
         "symfony/finder": "^4.0",
