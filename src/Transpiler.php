@@ -223,10 +223,38 @@ class Transpiler {
             }
 
             $file = $this->componentDir.$templateName.'.tmpl.yml';
-            $recipe['services'][$serviceName] = $this->resolveSingleComponent($file, $serviceData);
 
-            if (isset($serviceData['expose']) && is_array($serviceData['expose'])) {
-                $recipe['services'] = $this->addExposeHost($recipe['services'], $serviceName, $serviceData['expose']);
+            // multiple services using the same params?
+            $instanceCount = 1;
+            $i = 1;
+            if (isset($serviceData['instances']) && is_numeric($serviceData['instances'])) {
+                $instanceCount = (int) $serviceData['instances'];
+            }
+
+            while ($i < $instanceCount + 1) {
+                $thisServiceName = $serviceName;
+                if ($i > 1) {
+                    $thisServiceName .= ((string) $instanceCount);
+                }
+
+                $addedServiceData = [];
+                if (isset($serviceData['forInstance'.((string) $instanceCount)]) && is_array($serviceData['forInstance'.((string) $instanceCount)])) {
+                    $addedServiceData = $serviceData['forInstance'.((string) $instanceCount)];
+                }
+
+                $recipe['services'][$thisServiceName] = $this->resolveSingleComponent(
+                    $file,
+                    array_merge(
+                        $serviceData,
+                        $addedServiceData
+                    )
+                );
+
+                if (isset($serviceData['expose']) && is_array($serviceData['expose'])) {
+                    $recipe['services'] = $this->addExposeHost($recipe['services'], $thisServiceName, $serviceData['expose']);
+                }
+
+                $i++;
             }
         }
 
