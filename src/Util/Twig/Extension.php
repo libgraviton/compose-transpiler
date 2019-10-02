@@ -20,6 +20,7 @@ class Extension extends AbstractExtension
     {
         return [
             new TwigFilter('yamlEnv', [$this, 'yamlEnv']),
+            new TwigFilter('yamlEnc', [$this, 'yamlEnc']),
         ];
     }
 
@@ -34,6 +35,13 @@ class Extension extends AbstractExtension
     {
         $dumper = new Dumper(2);
         $yml = $dumper->dump($structure, 0);
+        return $yml;
+    }
+
+    public function yamlEnc($structure)
+    {
+        $dumper = new Dumper(2);
+        $yml = $dumper->dump($structure, 500);
         return $yml;
     }
 }
