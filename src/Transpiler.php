@@ -30,6 +30,7 @@ class Transpiler {
     private $baseTmplDir;
     private $componentDir;
     private $mixinsDir;
+    private $wrapperDir;
     private $scriptsDir;
 
     /**
@@ -89,6 +90,7 @@ class Transpiler {
         $this->baseTmplDir = 'base/';
         $this->componentDir = 'components/';
         $this->mixinsDir = 'mixins/';
+        $this->wrapperDir = 'wrapper/';
         $this->scriptsDir = 'scripts/';
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
@@ -270,8 +272,10 @@ class Transpiler {
 
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
 
-        // write generated yaml file
         $renderedYaml = $this->dumpYaml($recipe, $destFile);
+
+        // write generated yaml file
+
         $this->logger->info('Wrote file "'.$destFile.'"');
 
         // are there any scripts to generate?
@@ -282,7 +286,9 @@ class Transpiler {
             // compose image list
             $imageList = [];
             foreach ($parsedYaml['services'] as $service) {
-                $imageList[] = $service['image'];
+                if (isset($service['image'])) {
+                    $imageList[] = $service['image'];
+                }
             }
 
             $baseScriptData = [
@@ -309,6 +315,14 @@ class Transpiler {
                 $this->logger->info('Wrote "'.$scriptDestination.'"');
             }
         }
+
+        // is there an output template? if so, overwrite old one..
+        if (isset($profile['outputTemplate'])) {
+            $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
+            $this->fs->dumpFile($destFile, $content);
+            $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
+        }
+
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -351,6 +365,16 @@ class Transpiler {
         // additions itself? (gets transported 1:1)
         if (isset($data['additions']) && is_array($data['additions'])) {
             $base = \Ckr\Util\ArrayMerger::doMerge($base, $data['additions']);
+        }
+
+        // a wrapper takes the result of the first template and can create a new one..
+        if (isset($data['wrapper']) && is_array($data['wrapper'])) {
+            foreach ($data['wrapper'] as $wrapperName => $wrapperData) {
+                if (is_null($wrapperData)) {
+                    $wrapperData = [];
+                }
+                $base = $this->getSingleFile($this->wrapperDir.$wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
+            }
         }
 
         return $base;
