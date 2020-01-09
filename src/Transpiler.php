@@ -236,12 +236,12 @@ class Transpiler {
             while ($i < $instanceCount + 1) {
                 $thisServiceName = $serviceName;
                 if ($i > 1) {
-                    $thisServiceName .= ((string) $instanceCount);
+                    $thisServiceName .= ((string) $i);
                 }
 
                 $addedServiceData = [];
-                if (isset($serviceData['forInstance'.((string) $instanceCount)]) && is_array($serviceData['forInstance'.((string) $instanceCount)])) {
-                    $addedServiceData = $serviceData['forInstance'.((string) $instanceCount)];
+                if (isset($serviceData['forInstance'.((string) $i)]) && is_array($serviceData['forInstance'.((string) $i)])) {
+                    $addedServiceData = $serviceData['forInstance'.((string) $i)];
                 }
 
                 $recipe['services'][$thisServiceName] = $this->resolveSingleComponent(
