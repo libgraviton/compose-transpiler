@@ -115,6 +115,9 @@ class TranspilerTest extends TestCase {
                 null,
                 [
                 ]
+            ],
+            [
+                "app6forInstance.yml",
             ]
         ];
     }
