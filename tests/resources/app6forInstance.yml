@@ -1,5 +1,6 @@
 components:
-  redis:
+  redis2:
+    name: redis
     instances: 3
     forInstance2:
       mixins:

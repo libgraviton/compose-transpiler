@@ -234,14 +234,21 @@ class Transpiler {
             }
 
             while ($i < $instanceCount + 1) {
-                $thisServiceName = $serviceName;
+                $instanceSuffix = '';
                 if ($i > 1) {
-                    $thisServiceName .= ((string) $i);
+                    $instanceSuffix = ((string) $i);
                 }
 
-                $addedServiceData = [];
+                $thisServiceName = $serviceName.$instanceSuffix;
+
+                $addedServiceData = [
+                    'instanceSuffix' => $instanceSuffix
+                ];
                 if (isset($serviceData['forInstance'.((string) $i)]) && is_array($serviceData['forInstance'.((string) $i)])) {
-                    $addedServiceData = $serviceData['forInstance'.((string) $i)];
+                    $addedServiceData = array_merge(
+                        $serviceData['forInstance'.((string) $i)],
+                        $addedServiceData
+                    );
                 }
 
                 $recipe['services'][$thisServiceName] = $this->resolveSingleComponent(
