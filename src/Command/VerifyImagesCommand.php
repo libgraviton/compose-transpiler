@@ -55,7 +55,7 @@ class VerifyImagesCommand extends Command
      * @param InputInterface  $input  User input on console
      * @param OutputInterface $output Output of the command
      *
-     * @return void
+     * @return int exit code
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -92,9 +92,11 @@ class VerifyImagesCommand extends Command
                     break;
                 case false:
                     $output->write('DOES NOT EXIST!', true);
-                    exit(-1);
+                    return -1;
             }
         }
+
+        return 0;
     }
 
     private function parseFile($filename)
