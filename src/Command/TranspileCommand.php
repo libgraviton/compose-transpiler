@@ -78,7 +78,7 @@ class TranspileCommand extends Command
      * @param InputInterface  $input  User input on console
      * @param OutputInterface $output Output of the command
      *
-     * @return void
+     * @return int exit code
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -144,5 +144,7 @@ class TranspileCommand extends Command
                 file_put_contents($outDir.'release-id.release', basename($releaseFile));
             }
         }
+
+        return 0;
     }
 }
