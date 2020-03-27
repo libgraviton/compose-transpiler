@@ -2,8 +2,10 @@
 
 namespace Graviton\ComposeTranspilerTest;
 
+use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Transpiler;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Yaml\Yaml;
 
 class TranspilerTest extends TestCase {
@@ -120,6 +122,23 @@ class TranspilerTest extends TestCase {
                 "app6forInstance.yml",
             ]
         ];
+    }
+
+    public function testReplacerRawFile()
+    {
+        $rawFile = __DIR__.'/resources/replacer/fileWithTags.txt';
+        $replacer = new VersionTagReplacer(__DIR__.'/resources/releaseFile');
+        $logger = new ConsoleLogger($this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock());
+        $replacer->setLogger($logger);
+        $replacer->init();
+
+        $expected = 'this is some file with nginx:5.5.5 content'.PHP_EOL.PHP_EOL.
+                    'another line org/fred-setup:3.0.0'.PHP_EOL;
+
+        $this->assertEquals(
+            $expected,
+            $replacer->replace(file_get_contents($rawFile))
+        );
     }
 
 }

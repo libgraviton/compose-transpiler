@@ -326,7 +326,7 @@ class Transpiler {
         // is there an output template? if so, overwrite old one..
         if (isset($profile['outputTemplate'])) {
             $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
-            $this->fs->dumpFile($destFile, $content);
+            $this->dumpFile($content, $destFile);
             $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
         }
 
@@ -475,6 +475,17 @@ class Transpiler {
         }
 
         $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $this->envFileName);
+    }
+
+    private function dumpFile($content, $file)
+    {
+        // our replacers
+        $replacer = new VersionTagReplacer($this->releaseFile);
+        $replacer->setLogger($this->logger);
+        $replacer->init();
+        $content = $replacer->replace($content);
+
+        $this->fs->dumpFile($file, $content);
     }
 
     /**

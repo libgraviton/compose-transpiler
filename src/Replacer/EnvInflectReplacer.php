@@ -39,7 +39,7 @@ class EnvInflectReplacer extends ReplacerAbstract
      * @return mixed replaced
      * @throws \Exception
      */
-    protected function replace($content)
+    public function replace($content)
     {
         // get all envs vars
         preg_match_all('/\$\{([[:word:][:print:]\:\-\_]*)\}/iU', $content, $matches, PREG_SET_ORDER);

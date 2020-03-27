@@ -33,7 +33,7 @@ class VersionTagReplacer extends ReplacerAbstract
             foreach (file($this->releaseFile) as $release) {
                 $releaseParts = explode(":", trim($release));
 
-                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@i';
+                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@imU';
                 // now replace all "\*" (wildcards in release file) with the real wildcard
                 $pattern = str_replace('\*', '.*', $pattern);
 
@@ -49,7 +49,7 @@ class VersionTagReplacer extends ReplacerAbstract
      * @return mixed replaced
      * @throws \Exception
      */
-    protected function replace($content)
+    public function replace($content)
     {
         if (strpos($content, $this->checkString) === false) {
             return $content;

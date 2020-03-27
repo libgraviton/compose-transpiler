@@ -34,5 +34,5 @@ abstract class ReplacerAbstract {
 
     abstract protected function init();
 
-    abstract protected function replace($content);
+    abstract public function replace($content);
 }
