@@ -11,6 +11,8 @@ use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Symfony\Bridge\Twig\Extension\CodeExtension;
+use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
@@ -99,6 +101,7 @@ class Transpiler {
         $loader = new FilesystemLoader($this->baseDir);
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new Extension());
+        $this->twig->addExtension(new YamlExtension());
     }
 
     /**
