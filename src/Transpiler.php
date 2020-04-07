@@ -319,6 +319,10 @@ class Transpiler {
                     throw new \LogicException("You must specify a filename - what should be the name of the script.");
                 }
 
+                if (isset($scriptData['template'])) {
+                    $scriptName = $scriptData['template'];
+                }
+
                 $scriptDestination = pathinfo($destFile,PATHINFO_DIRNAME).'/'.$scriptData['filename'];
                 $file = $this->scriptsDir.$scriptName.'.tmpl';
                 $this->fs->dumpFile($scriptDestination, $this->getSingleFile($file, $scriptData, false));
