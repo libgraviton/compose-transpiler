@@ -14,7 +14,8 @@
         "php-http/guzzle6-adapter": "^2.0",
         "nyholm/psr7": "^1.1",
         "php-http/client-common": "^2.0",
-        "symfony/twig-bridge": "^5.0"
+        "symfony/twig-bridge": "^5.0",
+        "neunerlei/arrays": "^1.2"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
