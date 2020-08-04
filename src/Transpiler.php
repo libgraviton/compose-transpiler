@@ -20,6 +20,7 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use function Graviton\ComposeTranspiler\Util\YamlUtils;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -519,7 +520,7 @@ class Transpiler {
             $content = $replacer->replaceArray($content);
         }
 
-        $content = $this->reallyDumpYml($content);
+        $content = YamlUtils::dump($content);
 
         // do we need to generate env file?
         if (!$this->inflect) {
@@ -547,14 +548,5 @@ class Transpiler {
 
         // return content WITHOUT finalRegexes (so templates have access to all)
         return $content;
-    }
-
-    private function reallyDumpYml($content)
-    {
-        return Yaml::dump($content, 99, 2,
-            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK +
-            Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE +
-            Yaml::DUMP_OBJECT_AS_MAP
-        );
     }
 }
