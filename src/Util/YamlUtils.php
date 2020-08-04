@@ -1,9 +1,16 @@
 <?php
-
+/**
+ * yaml utils
+ */
 namespace Graviton\ComposeTranspiler\Util;
 
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
+ * @license  https://opensource.org/licenses/MIT MIT License
+ * @link     http://swisscom.ch
+ */
 class YamlUtils
 {
 
@@ -17,11 +24,11 @@ class YamlUtils
         $returnParts = [];
 
         foreach ($parts as $part) {
-            $part = trim($part);
-            if (strlen($part) < 1) {
+            $part = Yaml::parse($part);
+            if (empty($part)) {
                 continue;
             }
-            $returnParts[] = Yaml::parse($part);
+            $returnParts[] = $part;
         }
 
         return $returnParts;
@@ -35,7 +42,7 @@ class YamlUtils
             }
             $singleOnes[] = self::dump($part);
         }
-        echo self::$glue.implode(self::$glue, $singleOnes);
+        return self::$glue.implode(self::$glue, $singleOnes);
     }
 
     public static function dump($content) {

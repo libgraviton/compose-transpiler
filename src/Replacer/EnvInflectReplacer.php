@@ -4,6 +4,7 @@
  */
 namespace Graviton\ComposeTranspiler\Replacer;
 
+use Graviton\ComposeTranspiler\Util\Patterns;
 use Symfony\Component\Process\Process;
 
 /**
@@ -15,7 +16,7 @@ class EnvInflectReplacer extends ReplacerAbstract
 {
 
     private $envFile;
-    private $envVars = [];
+    private $envVars;
 
     public function __construct($envFile)
     {
@@ -42,7 +43,7 @@ class EnvInflectReplacer extends ReplacerAbstract
     public function replace($content)
     {
         // get all envs vars
-        preg_match_all('/\$\{([[:word:][:print:]\:\-\_]*)\}/iU', $content, $matches, PREG_SET_ORDER);
+        preg_match_all(Patterns::DOCKER_ENV_VALUES, $content, $matches, PREG_SET_ORDER);
 
         if (empty($matches)) {
             return $content;

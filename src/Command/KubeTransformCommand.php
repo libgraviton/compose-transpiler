@@ -32,7 +32,13 @@ class KubeTransformCommand extends Command
                 'file',
                 InputArgument::REQUIRED,
                 'Path to intermediate file.'
+            )
+            ->addArgument(
+                'outDirectory',
+                InputArgument::REQUIRED,
+                'Where to write files to'
             );
+
     }
 
     /**
@@ -50,7 +56,8 @@ class KubeTransformCommand extends Command
             throw new \LogicException('File/Directory "'.$file.'" does not exist.');
         }
 
-        $t = new KubeTransformer($file, $output);
+        $outDir = $input->getArgument('outDirectory');
+        $t = new KubeTransformer($file, $outDir, $output);
         $t->transform();
 
 
