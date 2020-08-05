@@ -9,9 +9,9 @@ use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Graviton\ComposeTranspiler\Util\Twig\Extension;
+use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Symfony\Bridge\Twig\Extension\CodeExtension;
 use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +20,6 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
-use function Graviton\ComposeTranspiler\Util\YamlUtils;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>

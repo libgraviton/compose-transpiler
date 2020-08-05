@@ -12,6 +12,7 @@ use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -27,18 +28,24 @@ class KubeTransformer {
 
     private $filename;
 
-    // filename without extension
-    private $projectName;
-
     private $outDirectory;
+
+    private $projectName;
 
     private $fs;
 
     // here we memorize the current component
     private $currentComponent;
 
+    /**
+     * @var \SplFileInfo
+     */
+    private $currentFile;
+
     // here we save all configmap members
     private $configMap = [];
+
+    private $resources = [];
 
     /**
      * @var array
@@ -64,12 +71,46 @@ class KubeTransformer {
         }
     }
 
+    /**
+     * @param mixed|string $projectName
+     */
+    public function setProjectName($projectName): void
+    {
+        $this->projectName = $projectName;
+    }
+
     public function transform()
     {
-        $parts = YamlUtils::multiParse($this->filename);
-        $transformed = [];
+        // traverse all yml files
+        if (is_dir($this->filename)) {
+            $finder = Finder::create()
+                ->in($this->filename)
+                ->name(['*.yml', '*.yaml'])
+                ->notName(['kustomization.yaml']);
+
+            $files = iterator_to_array($finder);
+        } else {
+            $files = [new \SplFileInfo($this->filename)];
+        }
 
         $callable = \Closure::fromCallable([$this, 'traverseArray']);
+
+        foreach ($files as $file) {
+            $this->currentFile = $file;
+            $this->transformFile($file, $callable);
+        }
+
+        // write kustomization.yaml
+        $this->fs->dumpFile(
+            $this->outDirectory.'kustomization.yaml',
+            YamlUtils::dump($this->getKustomizationYaml())
+        );
+    }
+
+    private function transformFile(\SplFileInfo $file, callable $callable) {
+        $filename = $file->getPathname();
+        $parts = YamlUtils::multiParse($filename);
+        $transformed = [];
 
         // the first job is to traverse all this and see for ${} matches..
         foreach ($parts as $part) {
@@ -78,15 +119,11 @@ class KubeTransformer {
 
         // write yaml
         $this->fs->dumpFile(
-            $this->outDirectory.basename($this->filename),
+            $this->outDirectory.$file->getBasename(),
             YamlUtils::multiDump($transformed)
         );
 
-        // write kustimization.yaml
-        $this->fs->dumpFile(
-            $this->outDirectory.'kustomization.yaml',
-            YamlUtils::dump($this->getKustomizationYaml())
-        );
+        $this->resources[] = basename($filename);
     }
 
     /**
@@ -137,7 +174,7 @@ class KubeTransformer {
             'kind' => 'Kustomization'
         ];
 
-        $yaml['resources'] = [basename($this->filename)];
+        $yaml['resources'] = $this->resources;
 
         // configmap
         $mapEntries = [];

@@ -8,6 +8,7 @@ use Graviton\ComposeTranspiler\KubeTransformer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -37,8 +38,13 @@ class KubeTransformCommand extends Command
                 'outDirectory',
                 InputArgument::REQUIRED,
                 'Where to write files to'
+            )
+            ->addOption(
+                'projectName',
+                'p',
+                InputOption::VALUE_OPTIONAL,
+                'Optional project name'
             );
-
     }
 
     /**
@@ -52,15 +58,15 @@ class KubeTransformCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $file = $input->getArgument('file');
-        if (!file_exists($file)) {
-            throw new \LogicException('File/Directory "'.$file.'" does not exist.');
-        }
-
         $outDir = $input->getArgument('outDirectory');
         $t = new KubeTransformer($file, $outDir, $output);
+
+        $projectName = $input->getOption('projectName');
+        if (!is_null($projectName)) {
+            $t->setProjectName($projectName);
+        }
+
         $t->transform();
-
-
         return 0;
     }
 }
