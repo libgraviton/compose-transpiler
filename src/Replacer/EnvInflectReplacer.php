@@ -4,8 +4,8 @@
  */
 namespace Graviton\ComposeTranspiler\Replacer;
 
+use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\Patterns;
-use Symfony\Component\Process\Process;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -21,7 +21,9 @@ class EnvInflectReplacer extends ReplacerAbstract
     public function __construct($envFile)
     {
         $this->envFile = $envFile;
-        $this->envVars = $this->getEnvVars();
+
+        $envHandler = new EnvFileHandler();
+        $this->envVars = $envHandler->interpretEnvFile($envFile);
     }
 
     public function init()
@@ -80,30 +82,5 @@ class EnvInflectReplacer extends ReplacerAbstract
         }
 
         return $content;
-    }
-
-    /**
-     * here we let bash and php interpret the final values of a env file
-     * so we can get our values to replace them.
-
-     * @return array the env
-     */
-    private function getEnvVars()
-    {
-        $subCmd = [
-            'set -o allexport',
-            'source '.escapeshellarg($this->envFile),
-            'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
-        ];
-        $cmd = [
-            'bash',
-            '-c',
-            implode(';', $subCmd)
-        ];
-
-        $process = new Process($cmd);
-        $process->run();
-
-        return json_decode($process->getOutput(), true);
     }
 }

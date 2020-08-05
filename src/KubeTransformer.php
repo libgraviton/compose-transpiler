@@ -4,6 +4,7 @@
  */
 namespace Graviton\ComposeTranspiler;
 
+use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\Patterns;
 use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Neunerlei\Arrays\Arrays;
@@ -100,6 +101,8 @@ class KubeTransformer {
             $this->transformFile($file, $callable);
         }
 
+        $this->loadEnvFiles();
+
         // write kustomization.yaml
         $this->fs->dumpFile(
             $this->outDirectory.'kustomization.yaml',
@@ -166,6 +169,29 @@ class KubeTransformer {
         }
 
         return $currentValue;
+    }
+
+    private function loadEnvFiles() {
+        if (!is_dir($this->filename)) {
+            return;
+        }
+
+        $finder = Finder::create()
+            ->in($this->filename)
+            ->name(['*.env'])
+            ->sortByName(true);
+
+        $files = iterator_to_array($finder);
+        $envHandler = new EnvFileHandler();
+
+        foreach ($files as $file) {
+            $envs = $envHandler->interpretEnvFile($file->getPathname());
+            foreach ($envs as $name => $value) {
+                if (isset($this->configMap[$name]) && !empty($value)) {
+                    $this->configMap[$name] = $value;
+                }
+            }
+        }
     }
 
     private function getKustomizationYaml() {
