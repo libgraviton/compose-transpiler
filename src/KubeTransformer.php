@@ -187,11 +187,13 @@ class KubeTransformer {
         foreach ($files as $file) {
             $envs = $envHandler->interpretEnvFile($file->getPathname());
             foreach ($envs as $name => $value) {
-                if (isset($this->configMap[$name]) && !empty($value)) {
+                if (array_key_exists($name, $this->configMap)) {
                     $this->configMap[$name] = $value;
                 }
             }
         }
+
+        ksort($this->configMap);
     }
 
     private function getKustomizationYaml() {
