@@ -53,7 +53,11 @@ class EnvFileHandler
             'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
         ];
         $cmd = [
+            'env',
+            '-i',
             'bash',
+            '--noprofile',
+            '--norc',
             '-c',
             implode(';', $subCmd)
         ];
