@@ -332,6 +332,11 @@ class Transpiler {
 
         // is there an output template? if so, overwrite old one..
         if (isset($profile['outputTemplate'])) {
+            // any params?
+            if (is_array($profile['outputTemplateParams'])) {
+                $recipe = array_merge($recipe, $profile['outputTemplateParams']);
+            }
+
             $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
             $this->dumpFile($content, $destFile);
             $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
