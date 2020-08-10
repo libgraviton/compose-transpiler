@@ -154,18 +154,32 @@ class KubeTransformer {
             return $currentValue;
         }
 
+        $isEnvOnlyValueContext = (
+            strpos($path, '.env.') !== false && strlen($path) > 10 && substr($path, -10) == '.valueFrom'
+        );
+
         foreach ($matches as $match) {
             $matchParts = explode(':-', $match[1]);
-            $varName = $matchParts[0];
+            $varName = trim($matchParts[0]);
             $default = null;
             if (isset($matchParts[1])) {
-                $default = $matchParts[1];
+                $default = trim($matchParts[1]);
             }
 
             $this->configMap[$varName] = $default;
 
-            // change braces
-            $currentValue = str_replace($match[0], '$('.$varName.')', $currentValue);
+            // is the current value the whole string? if so, replace with ConfigMap reference!
+            if ($isEnvOnlyValueContext) {
+                $currentValue = [
+                    'configMapKeyRef' => [
+                        'name' => $this->projectName,
+                        'key' => $varName
+                    ]
+                ];
+            } else {
+                // change braces
+                $currentValue = str_replace($match[0], '$('.$varName.')', $currentValue);
+            }
         }
 
         return $currentValue;
