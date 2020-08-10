@@ -103,6 +103,8 @@ class KubeTransformer {
 
         $this->loadEnvFiles();
 
+        ksort($this->configMap);
+
         // write kustomization.yaml
         $this->fs->dumpFile(
             $this->outDirectory.'kustomization.yaml',
@@ -166,7 +168,13 @@ class KubeTransformer {
                 $default = trim($matchParts[1]);
             }
 
-            $this->configMap[$varName] = $default;
+            // make sure it exists
+            if (!array_key_exists($varName, $this->configMap)) {
+                $this->configMap[$varName] = '';
+            }
+            if (!empty($default)) {
+                $this->configMap[$varName] = $default;
+            }
 
             // is the current value the whole string? if so, replace with ConfigMap reference!
             if ($isEnvOnlyValueContext) {
@@ -202,12 +210,15 @@ class KubeTransformer {
             $envs = $envHandler->interpretEnvFile($file->getPathname());
             foreach ($envs as $name => $value) {
                 if (array_key_exists($name, $this->configMap)) {
-                    $this->configMap[$name] = $value;
+                    if ($value == 'null' || is_null($value)) {
+                        // you can force an erasure of a value by setting it to 'null'
+                        $this->configMap[$name] = '';
+                    } elseif (!empty($value)) {
+                        $this->configMap[$name] = $value;
+                    }
                 }
             }
         }
-
-        ksort($this->configMap);
     }
 
     private function getKustomizationYaml() {
