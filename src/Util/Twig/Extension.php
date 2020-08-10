@@ -8,6 +8,7 @@ namespace Graviton\ComposeTranspiler\Util\Twig;
 use Symfony\Component\Yaml\Dumper;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
+use Twig\TwigFunction;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -21,6 +22,13 @@ class Extension extends AbstractExtension
         return [
             new TwigFilter('yamlEnv', [$this, 'yamlEnv']),
             new TwigFilter('yamlEnc', [$this, 'yamlEnc']),
+        ];
+    }
+
+    public function getFunctions()
+    {
+        return [
+            new TwigFunction('strRepeat', 'str_repeat')
         ];
     }
 
