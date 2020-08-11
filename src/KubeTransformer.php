@@ -45,6 +45,7 @@ class KubeTransformer {
 
     // here we save all configmap members
     private $configMap = [];
+    private $secretEnvs = [];
 
     private $resources = [];
 
@@ -110,6 +111,15 @@ class KubeTransformer {
             $this->outDirectory.'kustomization.yaml',
             YamlUtils::dump($this->getKustomizationYaml())
         );
+
+        // write list of secret envs
+        if (count($this->secretEnvs) > 0) {
+            ksort($this->secretEnvs);
+            $this->fs->dumpFile(
+                $this->outDirectory . 'secretenvs.yaml',
+                YamlUtils::dump(array_keys($this->secretEnvs))
+            );
+        }
     }
 
     private function transformFile(\SplFileInfo $file, callable $callable) {
@@ -160,6 +170,15 @@ class KubeTransformer {
             strpos($path, '.env.') !== false && strlen($path) > 10 && substr($path, -10) == '.valueFrom'
         );
 
+        $secretPrefix = '[SECRET]';
+        $isSecretEnv = (
+            strlen($currentValue) > strlen($secretPrefix) && substr($currentValue, 0, strlen($secretPrefix)) == $secretPrefix
+        );
+        if ($isSecretEnv) {
+            // remove prefix again
+            $currentValue = substr($currentValue, strlen($secretPrefix));
+        }
+
         foreach ($matches as $match) {
             $matchParts = explode(':-', $match[1]);
             $varName = trim($matchParts[0]);
@@ -169,21 +188,34 @@ class KubeTransformer {
             }
 
             // make sure it exists
-            if (!array_key_exists($varName, $this->configMap)) {
-                $this->configMap[$varName] = '';
-            }
-            if (!empty($default)) {
-                $this->configMap[$varName] = $default;
+            if (!$isSecretEnv) {
+                if (!array_key_exists($varName, $this->configMap)) {
+                    $this->configMap[$varName] = '';
+                }
+                if (!empty($default)) {
+                    $this->configMap[$varName] = $default;
+                }
+            } else {
+                $this->secretEnvs[$varName] = '';
             }
 
             // is the current value the whole string? if so, replace with ConfigMap reference!
             if ($isEnvOnlyValueContext) {
-                $currentValue = [
-                    'configMapKeyRef' => [
-                        'name' => $this->projectName,
-                        'key' => $varName
-                    ]
-                ];
+                if (!$isSecretEnv) {
+                    $currentValue = [
+                        'configMapKeyRef' => [
+                            'name' => $this->projectName,
+                            'key' => $varName
+                        ]
+                    ];
+                } else {
+                    $currentValue = [
+                        'secretKeyRef' => [
+                            'name' => $this->projectName,
+                            'key' => $varName
+                        ]
+                    ];
+                }
             } else {
                 // change braces
                 $currentValue = str_replace($match[0], '$('.$varName.')', $currentValue);
