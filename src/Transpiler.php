@@ -9,9 +9,9 @@ use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Graviton\ComposeTranspiler\Util\Twig\Extension;
+use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Symfony\Bridge\Twig\Extension\CodeExtension;
 use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -332,6 +332,11 @@ class Transpiler {
 
         // is there an output template? if so, overwrite old one..
         if (isset($profile['outputTemplate'])) {
+            // any params?
+            if (is_array($profile['outputTemplateParams'])) {
+                $recipe = array_merge($recipe, $profile['outputTemplateParams']);
+            }
+
             $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
             $this->dumpFile($content, $destFile);
             $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
@@ -519,7 +524,7 @@ class Transpiler {
             $content = $replacer->replaceArray($content);
         }
 
-        $content = $this->reallyDumpYml($content);
+        $content = YamlUtils::dump($content);
 
         // do we need to generate env file?
         if (!$this->inflect) {
@@ -547,14 +552,5 @@ class Transpiler {
 
         // return content WITHOUT finalRegexes (so templates have access to all)
         return $content;
-    }
-
-    private function reallyDumpYml($content)
-    {
-        return Yaml::dump($content, 99, 2,
-            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK +
-            Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE +
-            Yaml::DUMP_OBJECT_AS_MAP
-        );
     }
 }
