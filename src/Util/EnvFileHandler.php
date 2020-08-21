@@ -50,12 +50,14 @@ class EnvFileHandler
         $subCmd = [
             'set -o allexport',
             'source '.escapeshellarg($filename),
-            'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
+            PHP_BINARY.' -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
         ];
         $cmd = [
             'env',
             '-i',
             'bash',
+            '--noprofile',
+            '--norc',
             '-c',
             implode(';', $subCmd)
         ];
