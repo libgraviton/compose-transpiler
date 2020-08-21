@@ -65,7 +65,19 @@ class EnvFileHandler
         $process = new Process($cmd);
         $process->run();
 
-        var_dump($process->getErrorOutput());
+        if ($this->logger instanceof LoggerInterface) {
+            if ($process->isSuccessful()) {
+                $this->logger->info("Executed EnvFileParsing successful", ['cmd' => $cmd]);
+            } else {
+                $this->logger->warning(
+                    'Not successful EnvFileParsing',
+                    [
+                        'cmd' => $cmd,
+                        'output' => $process->getErrorOutput()
+                    ]
+                );
+            }
+        }
 
         return json_decode($process->getOutput(), true);
     }
