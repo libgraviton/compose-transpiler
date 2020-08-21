@@ -24,6 +24,8 @@ class EnvInflectReplacer extends ReplacerAbstract
 
         $envHandler = new EnvFileHandler();
         $this->envVars = $envHandler->interpretEnvFile($envFile);
+        echo "ENV VARS";
+        var_dump($this->envVars);
     }
 
     public function init()
