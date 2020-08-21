@@ -65,6 +65,8 @@ class EnvFileHandler
         $process = new Process($cmd);
         $process->run();
 
+        var_dump($process->getErrorOutput());
+
         return json_decode($process->getOutput(), true);
     }
 
