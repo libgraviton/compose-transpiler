@@ -56,8 +56,6 @@ class EnvFileHandler
             'env',
             '-i',
             'bash',
-            '--noprofile',
-            '--norc',
             '-c',
             implode(';', $subCmd)
         ];
