@@ -1,0 +1,29 @@
+version: 99
+services:
+  redis:
+    image: 'redis:latest'
+    environment:
+      ENV_NAME: "${REDIS_NAME}"
+    deploy:
+      placement:
+        constraints:
+          - 'node.role == manager'
+  redis2:
+    image: 'redis:latest'
+    environment:
+      ENV_NAME: "${REDIS2_NAME}"
+    deploy:
+      placement:
+        constraints:
+          - 'node.role != manager'
+  redis3:
+    image: 'redis:latest'
+    environment:
+      ENV_NAME: "${REDIS3_NAME}"
+    deploy:
+      placement:
+        constraints:
+          - 'node.role == manager'
+networks:
+  internal:
+    external: false

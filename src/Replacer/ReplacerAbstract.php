@@ -4,6 +4,7 @@
  */
 namespace Graviton\ComposeTranspiler\Replacer;
 
+use Neunerlei\Arrays\Arrays;
 use Psr\Log\LoggerInterface;
 
 abstract class ReplacerAbstract {
@@ -16,23 +17,10 @@ abstract class ReplacerAbstract {
 
     final public function replaceArray(array $content) {
         $this->init();
-        return $this->replaceValuesInArray($content);
-    }
-
-    private function replaceValuesInArray(array $content) {
-        foreach ($content as $key => $val) {
-            if (is_array($val)) {
-                $content[$key] = $this->replaceArray($val);
-            } elseif (is_null($val)) {
-                $content[$key] = null;
-            } else {
-                $content[$key] = $this->replace($val);
-            }
-        }
-        return $content;
+        return Arrays::mapRecursive($content, \Closure::fromCallable([$this, 'replace']));
     }
 
     abstract protected function init();
 
-    abstract protected function replace($content);
+    abstract public function replace($content);
 }

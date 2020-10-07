@@ -1,0 +1,3 @@
+this is some file with nginx:${TAG} content
+
+another line org/fred-setup:${TAG}

@@ -14,6 +14,8 @@ class VersionTagReplacer extends ReplacerAbstract
 {
 
     private $releaseFile;
+    private $patterns = [];
+    private $checkString = '${TAG}';
 
     public function __construct($releaseFile)
     {
@@ -22,6 +24,22 @@ class VersionTagReplacer extends ReplacerAbstract
 
     public function init()
     {
+        // prepare patterns
+        if (!is_null($this->releaseFile)) {
+            if (!file_exists($this->releaseFile)) {
+                throw new \Exception("File '".$this->releaseFile."' does not exist");
+            }
+
+            foreach (file($this->releaseFile) as $release) {
+                $releaseParts = explode(":", trim($release));
+
+                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@imU';
+                // now replace all "\*" (wildcards in release file) with the real wildcard
+                $pattern = str_replace('\*', '.*', $pattern);
+
+                $this->patterns[$pattern] = $releaseParts[1];
+            }
+        }
     }
 
     /**
@@ -31,22 +49,14 @@ class VersionTagReplacer extends ReplacerAbstract
      * @return mixed replaced
      * @throws \Exception
      */
-    protected function replace($content)
+    public function replace($content)
     {
-        if (!is_null($this->releaseFile)) {
-            if (!file_exists($this->releaseFile)) {
-                throw new \Exception("File '".$this->releaseFile."' does not exist");
-            }
+        if (strpos($content, $this->checkString) === false) {
+            return $content;
+        }
 
-            foreach (file($this->releaseFile) as $release) {
-                $releaseParts = explode(":", trim($release));
-
-                $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@i';
-                // now replace all "\*" (wildcards in release file) with the real wildcard
-                $pattern = str_replace('\*', '.*', $pattern);
-
-                $content = preg_replace($pattern, '$1:'.$releaseParts[1], $content);
-            }
+        foreach ($this->patterns as $pattern => $version) {
+            $content = preg_replace($pattern, '$1:'.$version, $content);
         }
 
         // replace missing ${TAG} mit notice!
@@ -58,5 +68,4 @@ class VersionTagReplacer extends ReplacerAbstract
 
         return $content;
     }
-
 }

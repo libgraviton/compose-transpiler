@@ -5,4 +5,7 @@ environment:
   FERDINAND: "${FERDINAND}"
   FERDINANDJSON: '{"value": "${FERDINAND}"}'
   FERDINAND2: ${FERDINAND2:-22}
+  PORT: 22
   PRINCE: "${PRINCE:-harry://theman why not long value}"
+subobject:
+  anotherInt: 2222

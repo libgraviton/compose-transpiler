@@ -1,0 +1,12 @@
+version: 99
+
+services:
+  ymlenv:
+    image: ymlenv
+    environment:
+      MAP: '{ hans: fred, dude: test, example: [1, 2], example2: { key: val } }'
+      ARRAY: '[\Namespace\ClassName, \Namespace\ClassName2, \Namespace2\Class]'
+
+networks:
+  internal:
+    external: false

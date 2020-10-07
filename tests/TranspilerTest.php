@@ -1,6 +1,14 @@
 <?php
 
-class TranspilerTest extends \PHPUnit\Framework\TestCase {
+namespace Graviton\ComposeTranspilerTest;
+
+use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
+use Graviton\ComposeTranspiler\Transpiler;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Yaml\Yaml;
+
+class TranspilerTest extends TestCase {
 
     /**
      *
@@ -11,9 +19,10 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
         $releaseFile = null,
         $envFileAsserts = [],
         $baseEnvFile = null,
-        $inflect = false
+        $inflect = false,
+        $expectedScripts = []
     ) {
-        $sut = new \Graviton\ComposeTranspiler\Transpiler(
+        $sut = new Transpiler(
             __DIR__.'/resources/_templates',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
@@ -30,14 +39,20 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
 
         $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
 
-        $contents = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/gen.yml');
-        $expected = \Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
+        $contents = Yaml::parseFile(__DIR__.'/gen.yml');
+        $expected = Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
 
         foreach ($envFileAsserts as $envFileAssert) {
-            $this->assertContains($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
+            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
         }
 
         $this->assertEquals($expected, $contents);
+
+        // check for scripts if defined. 'key' is generated file, 'value' is what we expect..
+        foreach ($expectedScripts as $genScript => $expectedScript) {
+            $this->assertFileEquals($expectedScript, $genScript);
+            unlink($genScript);
+        }
 
         unlink(__DIR__.'/gen.yml');
         if (!$inflect) unlink(__DIR__.'/gen.env');
@@ -48,7 +63,13 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
         return [
             [
                 "app1.yml",
-                __DIR__.'/resources/releaseFile'
+                __DIR__.'/resources/releaseFile',
+                [],
+                null,
+                false,
+                [
+                    __DIR__.'/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
+                ]
             ],
             [
                 "app2.yml",
@@ -90,8 +111,34 @@ class TranspilerTest extends \PHPUnit\Framework\TestCase {
                 ],
                 __DIR__.'/resources/envFiles/baseEnvInflect.env',
                 true
+            ],
+            [
+                "ymlenv.yml",
+                null,
+                [
+                ]
+            ],
+            [
+                "app6forInstance.yml",
             ]
         ];
+    }
+
+    public function testReplacerRawFile()
+    {
+        $rawFile = __DIR__.'/resources/replacer/fileWithTags.txt';
+        $replacer = new VersionTagReplacer(__DIR__.'/resources/releaseFile');
+        $logger = new ConsoleLogger($this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock());
+        $replacer->setLogger($logger);
+        $replacer->init();
+
+        $expected = 'this is some file with nginx:5.5.5 content'.PHP_EOL.PHP_EOL.
+                    'another line org/fred-setup:3.0.0'.PHP_EOL;
+
+        $this->assertEquals(
+            $expected,
+            $replacer->replace(file_get_contents($rawFile))
+        );
     }
 
 }

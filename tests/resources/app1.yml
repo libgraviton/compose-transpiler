@@ -1,11 +1,26 @@
+footer:
+  mixins:
+    more:
+
 components:
   fred:
     expose:
       doExpose: true
     mixins:
       more:
+  # override template
+  fred2:
+    template: fred
+  # override template and name
+  fred3:
+    template: fred
+    name: fred-fresh
   hans:
     mixins:
       more:
         derDude: yes
   my-setup:
+
+scripts:
+  examplescript:
+    filename: script.sh

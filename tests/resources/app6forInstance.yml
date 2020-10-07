@@ -1,0 +1,10 @@
+components:
+  redis2:
+    name: redis
+    instances: 3
+    forInstance2:
+      mixins:
+        nomanager:
+
+    mixins:
+      manager:

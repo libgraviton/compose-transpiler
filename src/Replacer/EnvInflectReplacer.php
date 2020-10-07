@@ -4,7 +4,8 @@
  */
 namespace Graviton\ComposeTranspiler\Replacer;
 
-use Symfony\Component\Process\Process;
+use Graviton\ComposeTranspiler\Util\EnvFileHandler;
+use Graviton\ComposeTranspiler\Util\Patterns;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -15,12 +16,17 @@ class EnvInflectReplacer extends ReplacerAbstract
 {
 
     private $envFile;
-    private $envVars = [];
+    private $envVars;
 
     public function __construct($envFile)
     {
         $this->envFile = $envFile;
-        $this->envVars = $this->getEnvVars();
+
+        $envHandler = new EnvFileHandler();
+        $this->envVars = $envHandler->interpretEnvFile($envFile);
+        if (!is_array($this->envVars)) {
+            $this->envVars = [];
+        }
     }
 
     public function init()
@@ -39,10 +45,10 @@ class EnvInflectReplacer extends ReplacerAbstract
      * @return mixed replaced
      * @throws \Exception
      */
-    protected function replace($content)
+    public function replace($content)
     {
         // get all envs vars
-        preg_match_all('/\$\{([[:word:][:print:]\:\-\_]*)\}/iU', $content, $matches, PREG_SET_ORDER);
+        preg_match_all(Patterns::DOCKER_ENV_VALUES, $content, $matches, PREG_SET_ORDER);
 
         if (empty($matches)) {
             return $content;
@@ -79,30 +85,5 @@ class EnvInflectReplacer extends ReplacerAbstract
         }
 
         return $content;
-    }
-
-    /**
-     * here we let bash and php interpret the final values of a env file
-     * so we can get our values to replace them.
-
-     * @return array the env
-     */
-    private function getEnvVars()
-    {
-        $subCmd = [
-            'set -o allexport',
-            'source '.escapeshellarg($this->envFile),
-            'php -d variables_order=E -r '.escapeshellarg('echo json_encode($_ENV);')
-        ];
-        $cmd = [
-            'bash',
-            '-c',
-            implode(';', $subCmd)
-        ];
-
-        $process = new Process($cmd);
-        $process->run();
-
-        return json_decode($process->getOutput(), true);
     }
 }

@@ -4,6 +4,7 @@
  */
 namespace Graviton\ComposeTranspiler\Command;
 
+use Graviton\ComposeTranspiler\Transpiler;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,6 +58,13 @@ class TranspileCommand extends Command
                 'If given, values from env file will be replaced in the yml instead of generating an env file'
             )
             ->addOption(
+                'regex',
+                'x',
+                InputArgument::REQUIRED + InputArgument::IS_ARRAY + InputOption::VALUE_IS_ARRAY,
+                'Stuff that is replaced (regex) at the end of generating in the yml. Each argument is a '.
+                'string like \'[pattern]::[replacer]\''
+            )
+            ->addOption(
                 'baseEnvFile',
                 'b',
                 InputOption::VALUE_OPTIONAL,
@@ -70,7 +78,7 @@ class TranspileCommand extends Command
      * @param InputInterface  $input  User input on console
      * @param OutputInterface $output Output of the command
      *
-     * @return void
+     * @return int exit code
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -84,7 +92,7 @@ class TranspileCommand extends Command
             throw new \LogicException('File/Directory "'.$defFile.'" does not exist.');
         }
 
-        $t = new \Graviton\ComposeTranspiler\Transpiler($templateDir, $output);
+        $t = new Transpiler($templateDir, $output);
 
         $releaseFile = $input->getOption('releaseFile');
         if (!is_null($releaseFile)) {
@@ -104,6 +112,10 @@ class TranspileCommand extends Command
 
         // inflect option
         $t->setInflect($input->getOption('inflect'));
+
+        if (is_array($input->getOption('regex'))) {
+            $t->setFinalRegexes($input->getOption('regex'));
+        }
 
         // dir or file?
         if (!is_dir($defFile)) {
@@ -132,5 +144,7 @@ class TranspileCommand extends Command
                 file_put_contents($outDir.'release-id.release', basename($releaseFile));
             }
         }
+
+        return 0;
     }
 }

@@ -4,3 +4,6 @@ components:
   fred:
     mixins:
       more:
+    additions:
+      literalDude: [1, 2]
+

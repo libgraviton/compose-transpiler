@@ -1,0 +1,3 @@
+image: redis:latest
+environment:
+  ENV_NAME: "${REDIS{{ instanceSuffix }}_NAME}"
