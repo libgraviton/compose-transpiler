@@ -4,7 +4,8 @@
  */
 namespace Graviton\ComposeTranspiler;
 
-use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
+use Graviton\ComposeTranspiler\OutputProcessor\ComposeOnShell;
+use Graviton\ComposeTranspiler\OutputProcessor\OutputProcessorAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
@@ -31,6 +32,11 @@ class Transpiler {
     private $utils;
 
     /**
+     * @var OutputProcessorAbstract
+     */
+    private $outputProcessor;
+
+    /**
      * @var Filesystem
      */
     private $fs;
@@ -52,13 +58,6 @@ class Transpiler {
      * @var EnvFileHandler
      */
     private $envFileHandler;
-
-    /**
-     * if we should inflect (= replace ENV values in yml instead of writing it into env file)
-     *
-     * @var bool
-     */
-    private $inflect = false;
 
     private $releaseFile;
     private $envFileName;
@@ -82,6 +81,8 @@ class Transpiler {
 
         // wraps twig and fs operations
         $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
+
+        $this->outputProcessor = new ComposeOnShell($this->utils);
     }
 
     /**
@@ -118,18 +119,6 @@ class Transpiler {
     public function setBaseEnvFile($baseEnvFile)
     {
         $this->baseEnvFile = $baseEnvFile;
-    }
-
-    /**
-     * set Inflect
-     *
-     * @param bool $inflect inflect
-     *
-     * @return void
-     */
-    public function setInflect($inflect)
-    {
-        $this->inflect = $inflect;
     }
 
     public function transpile() {
@@ -475,21 +464,11 @@ class Transpiler {
         $replacer = new VersionTagReplacer($this->releaseFile);
         $replacer->setLogger($this->logger);
         $content = $replacer->replaceArray($content);
-
-        if ($this->inflect) {
-            // inflect requested
-            $replacer = new EnvInflectReplacer($this->baseEnvFile);
-            $replacer->setLogger($this->logger);
-            $content = $replacer->replaceArray($content);
-        }
-
         $content = YamlUtils::dump($content);
 
         // do we need to generate env file?
-        if (!$this->inflect) {
-            $this->generateEnvFile($file, $content);
-            $this->logger->info('Wrote file "' . $this->envFileName . '"');
-        }
+        $this->generateEnvFile($file, $content);
+        $this->logger->info('Wrote file "' . $this->envFileName . '"');
 
         if ($file == '-') { // stdout
             echo $content;

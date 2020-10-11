@@ -51,12 +51,6 @@ class TranspileCommand extends Command
                 'Path to an optional release file - ${TAG} values will be replaced from this file.'
             )
             ->addOption(
-                'inflect',
-                'i',
-                InputOption::VALUE_NONE,
-                'If given, values from env file will be replaced in the yml instead of generating an env file'
-            )
-            ->addOption(
                 'baseEnvFile',
                 'b',
                 InputOption::VALUE_OPTIONAL,
@@ -106,9 +100,6 @@ class TranspileCommand extends Command
             }
             $t->setBaseEnvFile($baseEnvFile);
         }
-
-        // inflect option
-        $t->setInflect($input->getOption('inflect'));
 
         $t->transpile();
 

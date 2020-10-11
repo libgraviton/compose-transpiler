@@ -19,7 +19,6 @@ class TranspilerTest extends TestCase {
         $releaseFile = null,
         $envFileAsserts = [],
         $baseEnvFile = null,
-        $inflect = false,
         $expectedScripts = []
     ) {
         $sut = new Transpiler(
@@ -36,8 +35,6 @@ class TranspilerTest extends TestCase {
         if (!is_null($baseEnvFile)) {
             $sut->setBaseEnvFile($baseEnvFile);
         }
-
-        $sut->setInflect($inflect);
 
         $sut->transpile();
 
@@ -57,7 +54,7 @@ class TranspilerTest extends TestCase {
         }
 
         unlink(__DIR__.'/gen.yml');
-        if (!$inflect) unlink(__DIR__.'/gen.env');
+        unlink(__DIR__.'/gen.env');
     }
 
     public function dataProvider()
@@ -68,7 +65,6 @@ class TranspilerTest extends TestCase {
                 __DIR__.'/resources/releaseFile',
                 [],
                 null,
-                false,
                 [
                     __DIR__.'/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
                 ]
@@ -105,14 +101,6 @@ class TranspilerTest extends TestCase {
                     'this is a comment'
                 ],
                 __DIR__.'/resources/envFiles/baseEnv.env'
-            ],
-            [
-                "app5withenv.yml",
-                null,
-                [
-                ],
-                __DIR__.'/resources/envFiles/baseEnvInflect.env',
-                true
             ],
             [
                 "ymlenv.yml",
