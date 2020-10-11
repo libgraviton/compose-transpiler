@@ -7,10 +7,8 @@ namespace Graviton\ComposeTranspiler;
 use Graviton\ComposeTranspiler\OutputProcessor\ComposeOnShell;
 use Graviton\ComposeTranspiler\OutputProcessor\OutputProcessorAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
-use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Graviton\ComposeTranspiler\Util\TranspilerUtils;
-use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -54,11 +52,6 @@ class Transpiler {
         LogLevel::INFO   => OutputInterface::VERBOSITY_NORMAL
     ];
 
-    /**
-     * @var EnvFileHandler
-     */
-    private $envFileHandler;
-
     private $releaseFile;
     private $envFileName;
     private $baseEnvFile;
@@ -74,15 +67,14 @@ class Transpiler {
     {
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
-        $this->envFileHandler = new EnvFileHandler();
-        if (!is_null($this->logger)) {
-            $this->envFileHandler->setLogger($this->logger);
-        }
 
         // wraps twig and fs operations
         $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
-
         $this->outputProcessor = new ComposeOnShell($this->utils);
+
+        if (!is_null($this->logger)) {
+            $this->outputProcessor->setLogger($this->logger);
+        }
     }
 
     /**
@@ -110,6 +102,14 @@ class Transpiler {
     }
 
     /**
+     * @return mixed
+     */
+    public function getEnvFileName()
+    {
+        return $this->envFileName;
+    }
+
+    /**
      * set BaseEnvFile
      *
      * @param mixed $baseEnvFile baseEnvFile
@@ -119,6 +119,14 @@ class Transpiler {
     public function setBaseEnvFile($baseEnvFile)
     {
         $this->baseEnvFile = $baseEnvFile;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBaseEnvFile()
+    {
+        return $this->baseEnvFile;
     }
 
     public function transpile() {
@@ -232,27 +240,27 @@ class Transpiler {
 
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
 
-        $renderedYaml = $this->dumpYaml($recipe, $destFile);
+        // replace $TAG vars
+        $replacer = new VersionTagReplacer($this->releaseFile);
+        $replacer->setLogger($this->logger);
+        $recipe = $replacer->replaceArray($recipe);
 
-        // write generated yaml file
-
-        $this->logger->info('Wrote file "'.$destFile.'"');
+        // let outputprocessor do with that structure what he wants..
+        $this->outputProcessor->processFile($this, $destFile, $recipe);
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
 
-            $parsedYaml = Yaml::parse($renderedYaml);
-
             // compose image list
             $imageList = [];
-            foreach ($parsedYaml['services'] as $service) {
+            foreach ($recipe['services'] as $service) {
                 if (isset($service['image'])) {
                     $imageList[] = $service['image'];
                 }
             }
 
             $baseScriptData = [
-                'recipe' => Yaml::parse($renderedYaml),
+                'recipe' => $recipe,
                 'recipePath' => $destFile,
                 'envFilePath' => $this->envFileName,
                 'imageList' => $imageList,
@@ -393,90 +401,8 @@ class Transpiler {
         return $file;
     }
 
-    /**
-     * generate the companion env file to the yml file
-     *
-     * @param string $destFile    destination file as fallback
-     * @param string $content the yml content
-     */
-    private function generateEnvFile($destFile, $content)
-    {
-        // check filename
-        if (is_null($this->envFileName)) {
-            $envFile = $destFile;
-            if (substr($envFile, -4) == '.yml') {
-                $envFile = substr($envFile, 0, -4) . '.env';
-            }
-            $this->envFileName = $envFile;
-        }
-
-        preg_match_all('/\$\{([a-z0-9_-]*)\}/i', $content, $matches);
-
-        $vars = array_unique($matches[1]);
-        sort($vars);
-
-        // flip keys & fill lines
-        $varContents = array_map(function($value) {
-            return $value."=";
-        }, $vars);
-        $vars = array_combine($vars, $varContents);
-
-        // special env TAG we don't want here..
-        if (isset($vars['TAG'])) {
-            unset($vars['TAG']);
-        }
-
-        // do we have a base file?
-        if ($this->baseEnvFile) {
-            $this->envFileHandler->writeEnvFromArrayNoOverwrite(
-                $this->envFileHandler->getValuesFromFile($this->baseEnvFile),
-                $this->envFileName
-            );
-        }
-
-        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $this->envFileName);
-    }
-
     private function dumpFile($content, $file)
     {
-        // our replacers
-        $replacer = new VersionTagReplacer($this->releaseFile);
-        $replacer->setLogger($this->logger);
-        $replacer->init();
-        $content = $replacer->replace($content);
-
         $this->utils->writeOutputFile($file, $content);
-    }
-
-    /**
-     * dumps a yaml file in a nicely formatted way
-     *
-     * @param array  $content the content
-     * @param string $file    target file
-     *
-     * @throws \Exception
-     *
-     * @return mixed|string
-     */
-    private function dumpYaml($content, $file)
-    {
-        // our replacers
-        $replacer = new VersionTagReplacer($this->releaseFile);
-        $replacer->setLogger($this->logger);
-        $content = $replacer->replaceArray($content);
-        $content = YamlUtils::dump($content);
-
-        // do we need to generate env file?
-        $this->generateEnvFile($file, $content);
-        $this->logger->info('Wrote file "' . $this->envFileName . '"');
-
-        if ($file == '-') { // stdout
-            echo $content;
-        } else {
-            $this->utils->writeOutputFile($file, $content);
-        }
-
-        // return content WITHOUT finalRegexes (so templates have access to all)
-        return $content;
     }
 }

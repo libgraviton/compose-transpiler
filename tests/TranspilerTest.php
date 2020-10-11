@@ -6,6 +6,7 @@ use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Transpiler;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
 class TranspilerTest extends TestCase {
@@ -24,7 +25,7 @@ class TranspilerTest extends TestCase {
         $sut = new Transpiler(
             __DIR__.'/resources/_templates',
             __DIR__.'/resources/'.$filename,
-            __DIR__.'/gen.yml',
+            __DIR__.'/generated/gen.yml',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
 
@@ -38,11 +39,11 @@ class TranspilerTest extends TestCase {
 
         $sut->transpile();
 
-        $contents = Yaml::parseFile(__DIR__.'/gen.yml');
+        $contents = Yaml::parseFile(__DIR__.'/generated/gen.yml');
         $expected = Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
 
         foreach ($envFileAsserts as $envFileAssert) {
-            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
+            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/generated/gen.env'));
         }
 
         $this->assertEquals($expected, $contents);
@@ -50,11 +51,9 @@ class TranspilerTest extends TestCase {
         // check for scripts if defined. 'key' is generated file, 'value' is what we expect..
         foreach ($expectedScripts as $genScript => $expectedScript) {
             $this->assertFileEquals($expectedScript, $genScript);
-            unlink($genScript);
         }
 
-        unlink(__DIR__.'/gen.yml');
-        unlink(__DIR__.'/gen.env');
+        (new Filesystem())->remove(__DIR__.'/generated');
     }
 
     public function dataProvider()
@@ -66,7 +65,7 @@ class TranspilerTest extends TestCase {
                 [],
                 null,
                 [
-                    __DIR__.'/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
+                    __DIR__.'/generated/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
                 ]
             ],
             [

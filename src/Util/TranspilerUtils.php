@@ -136,7 +136,7 @@ class TranspilerUtils
     {
         if (substr($path, 0, 1) != '/') {
             // no absolute path? compose..
-            if (is_file($this->outputPath)) {
+            if (is_file($this->profilePath)) {
                 $path = pathinfo($this->outputPath,PATHINFO_DIRNAME).DIRECTORY_SEPARATOR.$path;
             } else {
                 // assume directory
