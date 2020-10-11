@@ -24,6 +24,8 @@ class TranspilerTest extends TestCase {
     ) {
         $sut = new Transpiler(
             __DIR__.'/resources/_templates',
+            __DIR__.'/resources/'.$filename,
+            __DIR__.'/gen.yml',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
 
@@ -37,7 +39,7 @@ class TranspilerTest extends TestCase {
 
         $sut->setInflect($inflect);
 
-        $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
+        $sut->transpile();
 
         $contents = Yaml::parseFile(__DIR__.'/gen.yml');
         $expected = Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);

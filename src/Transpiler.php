@@ -9,18 +9,14 @@ use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
 use Graviton\ComposeTranspiler\Util\TranspilerUtils;
-use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
-use Twig\Environment;
-use Twig\Loader\FilesystemLoader;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -28,13 +24,6 @@ use Twig\Loader\FilesystemLoader;
  * @link     http://swisscom.ch
  */
 class Transpiler {
-
-    private $baseDir;
-    private $baseTmplDir;
-    private $componentDir;
-    private $mixinsDir;
-    private $wrapperDir;
-    private $scriptsDir;
 
     /**
      * @var TranspilerUtils
@@ -50,11 +39,6 @@ class Transpiler {
      * @var LoggerInterface
      */
     private $logger;
-
-    /**
-     * @var bool
-     */
-    private $dirMode = false;
 
     /**
      * @var array
@@ -87,14 +71,15 @@ class Transpiler {
     private $envFileName;
     private $baseEnvFile;
 
-    public function __construct($baseDir, OutputInterface $output)
+    /**
+     * Transpiler constructor.
+     * @param string $baseDir path to the 'base directory', where all templates reside
+     * @param string $profilePath the 'input' path - either a single yaml file or a directory with many files
+     * @param string $outputPath where to output stuff
+     * @param OutputInterface $output
+     */
+    public function __construct($baseDir, $profilePath, $outputPath, OutputInterface $output)
     {
-        $this->baseDir = $baseDir;
-        $this->baseTmplDir = 'base/';
-        $this->componentDir = 'components/';
-        $this->mixinsDir = 'mixins/';
-        $this->wrapperDir = 'wrapper/';
-        $this->scriptsDir = 'scripts/';
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
         $this->envFileHandler = new EnvFileHandler();
@@ -102,9 +87,8 @@ class Transpiler {
             $this->envFileHandler->setLogger($this->logger);
         }
 
-        $this->utils = new TranspilerUtils(
-            $baseDir
-        );
+        // wraps twig and fs operations
+        $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
     }
 
     /**
@@ -163,16 +147,10 @@ class Transpiler {
         $this->finalRegexes = $finalRegexes;
     }
 
-    /**
-     * set DirMode
-     *
-     * @param bool $dirMode dirMode
-     *
-     * @return void
-     */
-    public function setDirMode($dirMode)
-    {
-        $this->dirMode = $dirMode;
+    public function transpile() {
+        foreach ($this->utils->getResourcesToTranspile() as $source => $destination) {
+            $this->transpileFile($source, $destination);
+        }
     }
 
     /**
@@ -187,7 +165,7 @@ class Transpiler {
      *
      * @return bool
      */
-    public function transpile($profileFile, $destFile)
+    private function transpileFile($profileFile, $destFile)
     {
         $profile = (new ProfileResolver($profileFile))->resolve();
 
@@ -196,7 +174,7 @@ class Transpiler {
             if ($destFile == '-') {
                 echo file_get_contents($profileFile);
             } else {
-                $this->fs->copy($profileFile, $destFile);
+                $this->utils->getFs()->copy($profileFile, $destFile);
             }
             return true;
         }
@@ -230,7 +208,7 @@ class Transpiler {
                 $templateName = $serviceData['template'];
             }
 
-            $file = $this->componentDir.$templateName.'.tmpl.yml';
+            $file = $templateName.'.tmpl.yml';
 
             // multiple services using the same params?
             $instanceCount = 1;
@@ -326,10 +304,9 @@ class Transpiler {
                     $scriptName = $scriptData['template'];
                 }
 
-                $scriptDestination = pathinfo($destFile,PATHINFO_DIRNAME).'/'.$scriptData['filename'];
-                $file = $this->scriptsDir.$scriptName.'.tmpl';
-                $this->fs->dumpFile($scriptDestination, $this->getSingleFile($file, $scriptData, false));
-                $this->logger->info('Wrote "'.$scriptDestination.'"');
+                $file = $scriptName.'.tmpl';
+                $this->utils->writeOutputFile($scriptData['filename'], $this->getSingleFile($file, $scriptData, false));
+                $this->logger->info('Wrote "'.$scriptData['filename'].'"');
             }
         }
 
@@ -340,7 +317,7 @@ class Transpiler {
                 $recipe = array_merge($recipe, $profile['outputTemplateParams']);
             }
 
-            $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
+            $content = $this->getSingleFile($profile['outputTemplate'].'.tmpl.yml', $recipe, false);
             $this->dumpFile($content, $destFile);
             $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
         }
@@ -354,7 +331,7 @@ class Transpiler {
             unset($data['template']);
         }
 
-        return $this->resolveSingleComponent($this->baseTmplDir.$defaultTemplate.'.tmpl.yml', $data);
+        return $this->resolveSingleComponent($defaultTemplate.'.tmpl.yml', $data);
     }
 
     /**
@@ -379,7 +356,7 @@ class Transpiler {
                 if (is_null($mixinData)) {
                     $mixinData = [];
                 }
-                $mixin = $this->getSingleFile($this->mixinsDir.$mixinName.'.tmpl.yml', array_merge($data, $mixinData));
+                $mixin = $this->getSingleFile($mixinName.'.tmpl.yml', array_merge($data, $mixinData));
                 $base = \Ckr\Util\ArrayMerger::doMerge($base, $mixin);
             }
         }
@@ -395,7 +372,7 @@ class Transpiler {
                 if (is_null($wrapperData)) {
                     $wrapperData = [];
                 }
-                $base = $this->getSingleFile($this->wrapperDir.$wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
+                $base = $this->getSingleFile($wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
             }
         }
 
@@ -417,8 +394,7 @@ class Transpiler {
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
-        $services[$currentServiceName.'-expose'] =
-            $this->getSingleFile($this->componentDir.'_expose.tmpl.yml', $data);
+        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose.tmpl.yml', $data);
         return $services;
     }
 
@@ -500,7 +476,7 @@ class Transpiler {
         $replacer->init();
         $content = $replacer->replace($content);
 
-        $this->fs->dumpFile($file, $content);
+        $this->utils->writeOutputFile($file, $content);
     }
 
     /**
@@ -550,7 +526,7 @@ class Transpiler {
         if ($file == '-') { // stdout
             echo $fileContent;
         } else {
-            $this->fs->dumpFile($file, $fileContent);
+            $this->utils->writeOutputFile($file, $fileContent);
         }
 
         // return content WITHOUT finalRegexes (so templates have access to all)
