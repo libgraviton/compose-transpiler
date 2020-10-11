@@ -8,6 +8,7 @@ use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
+use Graviton\ComposeTranspiler\Util\TranspilerUtils;
 use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
@@ -34,6 +35,11 @@ class Transpiler {
     private $mixinsDir;
     private $wrapperDir;
     private $scriptsDir;
+
+    /**
+     * @var TranspilerUtils
+     */
+    private $utils;
 
     /**
      * @var Filesystem
@@ -64,11 +70,6 @@ class Transpiler {
     private $envFileHandler;
 
     /**
-     * @var \Twig_Environment
-     */
-    private $twig;
-
-    /**
      * if we should inflect (= replace ENV values in yml instead of writing it into env file)
      *
      * @var bool
@@ -96,12 +97,14 @@ class Transpiler {
         $this->scriptsDir = 'scripts/';
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
-        $this->envFileHandler = new EnvFileHandler($this->logger);
+        $this->envFileHandler = new EnvFileHandler();
+        if (!is_null($this->logger)) {
+            $this->envFileHandler->setLogger($this->logger);
+        }
 
-        $loader = new FilesystemLoader($this->baseDir);
-        $this->twig = new Environment($loader);
-        $this->twig->addExtension(new Extension());
-        $this->twig->addExtension(new YamlExtension());
+        $this->utils = new TranspilerUtils(
+            $baseDir
+        );
     }
 
     /**
@@ -434,7 +437,7 @@ class Transpiler {
      */
     private function getSingleFile($file, $data = [], $isYaml = true)
     {
-        $file = $this->twig->load($file)->render($data);
+        $file = $this->utils->renderTwigTemplate($file, $data);
         if ($isYaml) {
             try {
                 return Yaml::parse($file);
