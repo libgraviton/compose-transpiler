@@ -60,13 +60,6 @@ class Transpiler {
      */
     private $inflect = false;
 
-    /**
-     * stuff that is replaced at the end of the generation
-     *
-     * @var array
-     */
-    private $finalRegexes = [];
-
     private $releaseFile;
     private $envFileName;
     private $baseEnvFile;
@@ -139,14 +132,6 @@ class Transpiler {
         $this->inflect = $inflect;
     }
 
-    /**
-     * @param array $finalRegexes
-     */
-    public function setFinalRegexes(array $finalRegexes)
-    {
-        $this->finalRegexes = $finalRegexes;
-    }
-
     public function transpile() {
         foreach ($this->utils->getResourcesToTranspile() as $source => $destination) {
             $this->transpileFile($source, $destination);
@@ -177,11 +162,6 @@ class Transpiler {
                 $this->utils->getFs()->copy($profileFile, $destFile);
             }
             return true;
-        }
-
-        // check for final regexes
-        if (isset($profile['finalRegexes']) && is_array($profile['finalRegexes'])) {
-            $this->setFinalRegexes($profile['finalRegexes']);
         }
 
         // get header..
@@ -511,22 +491,10 @@ class Transpiler {
             $this->logger->info('Wrote file "' . $this->envFileName . '"');
         }
 
-        // final replacers there?
-        $fileContent = $content;
-        if (is_array($this->finalRegexes) && !empty($this->finalRegexes)) {
-            foreach ($this->finalRegexes as $pattern) {
-                $patternParts = explode('::', $pattern);
-                if (count($patternParts) != 2) {
-                    $this->logger->error('Regex pattern "'.$pattern.'" has wrong form, check help');
-                }
-                $fileContent = preg_replace($patternParts[0], $patternParts[1], $fileContent);
-            }
-        }
-
         if ($file == '-') { // stdout
-            echo $fileContent;
+            echo $content;
         } else {
-            $this->utils->writeOutputFile($file, $fileContent);
+            $this->utils->writeOutputFile($file, $content);
         }
 
         // return content WITHOUT finalRegexes (so templates have access to all)

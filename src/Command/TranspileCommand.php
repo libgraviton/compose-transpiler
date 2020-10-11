@@ -57,13 +57,6 @@ class TranspileCommand extends Command
                 'If given, values from env file will be replaced in the yml instead of generating an env file'
             )
             ->addOption(
-                'regex',
-                'x',
-                InputArgument::REQUIRED + InputArgument::IS_ARRAY + InputOption::VALUE_IS_ARRAY,
-                'Stuff that is replaced (regex) at the end of generating in the yml. Each argument is a '.
-                'string like \'[pattern]::[replacer]\''
-            )
-            ->addOption(
                 'baseEnvFile',
                 'b',
                 InputOption::VALUE_OPTIONAL,
@@ -116,11 +109,6 @@ class TranspileCommand extends Command
 
         // inflect option
         $t->setInflect($input->getOption('inflect'));
-
-        if (is_array($input->getOption('regex'))) {
-            $t->setFinalRegexes($input->getOption('regex'));
-        }
-
 
         $t->transpile();
 
