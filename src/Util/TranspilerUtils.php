@@ -155,8 +155,29 @@ class TranspilerUtils
         $this->fs = $fs;
     }
 
-    public function writeOutputFile(string $path, string $content)
+    public function writeOutputFile(string $path, string $content, $append = false)
     {
+        $path = $this->getOutputFilePath($path);
+        if ($append && $this->fs->exists($path)) {
+            $this->fs->appendToFile($path, $content);
+        } else {
+            $this->fs->dumpFile($path, $content);
+        }
+    }
+
+    public function existsOutputFile(string $path) {
+        return $this->fs->exists($this->getOutputFilePath($path));
+    }
+
+    /**
+     * @return Filesystem
+     */
+    public function getFs(): Filesystem
+    {
+        return $this->fs;
+    }
+
+    public function getOutputFilePath($path) {
         if (substr($path, 0, 1) != '/') {
             // no absolute path? compose..
             if (is_file($this->profilePath)) {
@@ -169,16 +190,7 @@ class TranspilerUtils
                 $path = $this->outputPath.$path;
             }
         }
-
-        $this->fs->dumpFile($path, $content);
-    }
-
-    /**
-     * @return Filesystem
-     */
-    public function getFs(): Filesystem
-    {
-        return $this->fs;
+        return $path;
     }
 
 }

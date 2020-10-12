@@ -1,0 +1,11 @@
+version: 99
+services:
+  variablecomp:
+    image: 'variable:latest'
+    environment:
+      HANS: '${HANS}'
+      FRED: '${FRED}'
+      FERDINAND: '${FERDINAND}'
+networks:
+  internal:
+    external: false

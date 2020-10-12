@@ -1,0 +1,14 @@
+version: 99
+services:
+  kube1:
+    image: 'change.this.repository/kube1:latest'
+    environment:
+      SOME_ENV: '${SOME_ENV_VALUE:-default}'
+      SOME_ENV_COMPOSED: 'thisis${SOME_ENV_COMPOSED_VALUE:-default_composed}composed'
+      SOME_SECRET_ENV: '${SOME_SECRET_ENV_VALUE:-default_secret}'
+      SOME_SECRET_ENV_COMPOSED: 'thisisalso${SOME_SECRET_ENV_COMPOSED_VALUE:-default_secret_composed}composed'
+  kube1-expose:
+    image: 'nginx:latest'
+networks:
+  internal:
+    external: false

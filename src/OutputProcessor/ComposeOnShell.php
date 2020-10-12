@@ -19,13 +19,14 @@ class ComposeOnShell extends OutputProcessorAbstract {
 
     function processFile(Transpiler $transpiler, string $filePath, array $fileContent) {
         $this->transpiler = $transpiler;
-        $this->envFileHandler = new EnvFileHandler();
+        $this->envFileHandler = new EnvFileHandler($this->utils);
 
         // multifile? set env filename
         if ($this->utils->profileIsDirectory()) {
             $this->envFileName = 'dist.env';
         }
 
+        $fileContent = YamlUtils::cleanupYamlArray($fileContent);
         $content = YamlUtils::dump($fileContent);
 
         // do we need to generate env file?
@@ -71,7 +72,6 @@ class ComposeOnShell extends OutputProcessorAbstract {
         }
 
         // do we have a base file?
-
         if ($this->transpiler->getBaseEnvFile()) {
             $this->envFileHandler->writeEnvFromArrayNoOverwrite(
                 $this->envFileHandler->getValuesFromFile($this->transpiler->getBaseEnvFile()),
@@ -81,6 +81,4 @@ class ComposeOnShell extends OutputProcessorAbstract {
 
         $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $this->envFileName);
     }
-
-
 }

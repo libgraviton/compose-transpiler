@@ -6,7 +6,6 @@
 namespace Graviton\ComposeTranspiler\Util;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 /**
@@ -18,18 +17,18 @@ class EnvFileHandler
 {
 
     /**
-     * @var Filesystem
+     * @var TranspilerUtils
      */
-    private $fs;
+    private $utils;
 
     /**
      * @var LoggerInterface
      */
     private $logger;
 
-    public function __construct()
+    public function __construct(TranspilerUtils $utils)
     {
-        $this->fs = new Filesystem();
+        $this->utils = $utils;
     }
 
     /**
@@ -84,16 +83,16 @@ class EnvFileHandler
 
     public function writeEnvFromArrayNoOverwrite($values, $targetFile)
     {
-        if (file_exists($targetFile)) {
+        if ($this->utils->existsOutputFile($targetFile)) {
             $this->existingFileAdd($values, $targetFile);
         } else {
-            $this->fs->dumpFile($targetFile, implode(PHP_EOL, $values));
+            $this->utils->writeOutputFile($targetFile, implode(PHP_EOL, $values));
         }
     }
 
     public function getValuesFromFile($filename)
     {
-        $contents = file($filename);
+        $contents = file($this->utils->getOutputFilePath($filename));
         $lines = [];
         foreach ($contents as $line) {
             $line = trim($line);
@@ -140,7 +139,7 @@ class EnvFileHandler
                 $newContents[] = $value;
             }
 
-            $this->fs->appendToFile($filename, PHP_EOL.implode(PHP_EOL, $newContents));
+            $this->utils->writeOutputFile($filename, PHP_EOL.implode(PHP_EOL, $newContents), true);
         }
     }
 }

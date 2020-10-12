@@ -55,4 +55,19 @@ class YamlUtils
         );
     }
 
+    public static function cleanupYamlArray(array $content) {
+        $newContent = [];
+        foreach ($content as $key => $value) {
+            if (is_string($key) && substr($key, 0, 1) == '_') {
+                continue;
+            }
+            if (is_array($value)) {
+                $newContent[$key] = self::cleanupYamlArray($value);
+            } else {
+                $newContent[$key] = $value;
+            }
+        }
+        return $newContent;
+    }
+
 }

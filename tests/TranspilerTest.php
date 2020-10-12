@@ -114,6 +114,34 @@ class TranspilerTest extends TestCase {
         ];
     }
 
+    public function testComposeDirTranspiling()
+    {
+        $sut = new Transpiler(
+            __DIR__.'/resources/_templates',
+            __DIR__.'/resources/composeprofile',
+            __DIR__.'/generated/',
+            $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
+        );
+        $sut->setBaseEnvFile(__DIR__.'/resources/composeprofile/compose.env');
+
+        $sut->transpile();
+
+        $this->assertEqualsCanonicalizing(
+            Yaml::parseFile(__DIR__.'/resources/expected/composeprofile/compose.yml'),
+            Yaml::parseFile(__DIR__.'/generated/compose.yml')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            Yaml::parseFile(__DIR__.'/resources/expected/composeprofile/compose2.yml'),
+            Yaml::parseFile(__DIR__.'/generated/compose2.yml')
+        );
+
+        // should have 5 lines, we assume then that the content is fine
+        $this->assertEquals(5, count(file(__DIR__.'/generated/dist.env')));
+
+        (new Filesystem())->remove(__DIR__.'/generated');
+    }
+
     /**
      * here, we transpile the 'kubeprofile' directory and check the generated folder..
      * it uses the kube-kustomize outputcontroller and specifies settings in the folder in transpiler.yml
