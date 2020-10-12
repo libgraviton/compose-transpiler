@@ -172,6 +172,7 @@ spec:
     targetPort: {{ serviceName }}{{ expose.port }}
   tls:
     termination: edge
+    insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
     name: {{ serviceName }}

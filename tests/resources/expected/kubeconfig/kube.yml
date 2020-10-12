@@ -69,6 +69,7 @@ spec:
     targetPort: kube180
   tls:
     termination: edge
+    insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
     name: kube1
