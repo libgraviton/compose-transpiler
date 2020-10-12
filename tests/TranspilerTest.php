@@ -4,6 +4,7 @@ namespace Graviton\ComposeTranspilerTest;
 
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Transpiler;
+use Graviton\ComposeTranspiler\Util\YamlUtils;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Filesystem\Filesystem;
@@ -111,6 +112,58 @@ class TranspilerTest extends TestCase {
                 "app6forInstance.yml",
             ]
         ];
+    }
+
+    /**
+     * here, we transpile the 'kubeprofile' directory and check the generated folder..
+     * it uses the kube-kustomize outputcontroller and specifies settings in the folder in transpiler.yml
+     */
+    public function testKubeDirTranspiling()
+    {
+        $sut = new Transpiler(
+            __DIR__.'/resources/_templates',
+            __DIR__.'/resources/kubeprofile',
+            __DIR__.'/generated/',
+            $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
+        );
+        $sut->setBaseEnvFile(__DIR__.'/resources/kubeprofile/kube.env');
+        $sut->setReleaseFile(__DIR__.'/resources/kubeprofile/kube.release');
+
+        $sut->transpile();
+
+        // kube.yml and kube2.yml should be identical, same as expected one..
+        $expectedKubeYaml = YamlUtils::multiParse(__DIR__.'/resources/expected/kubeconfig/kube.yml');
+
+        // kube.yml should be as expected
+        $this->assertSame(
+            $expectedKubeYaml,
+            YamlUtils::multiParse(__DIR__.'/generated/kube.yml')
+        );
+        // kube2.yml should be identical
+        $this->assertSame(
+            $expectedKubeYaml,
+            YamlUtils::multiParse(__DIR__.'/generated/kube2.yml')
+        );
+
+        // see kustomization.yaml is as expected
+        $this->assertSame(
+            Yaml::parseFile(__DIR__.'/resources/expected/kubeconfig/kustomization.yaml'),
+            Yaml::parseFile(__DIR__.'/generated/kustomization.yaml')
+        );
+
+        // verify files that were copied are the same
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_configs/type1.yaml',
+            __DIR__.'/generated/kustomize_configs/type1.yaml',
+        );
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_configs/type2.yaml',
+            __DIR__.'/generated/kustomize_configs/type2.yaml',
+        );
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_patches/added-env.json',
+            __DIR__ . '/generated/patches/added-env-patch.json',
+        );
     }
 
     public function testReplacerRawFile()

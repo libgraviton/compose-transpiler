@@ -1,0 +1,19 @@
+outputProcessor:
+  name: kube-kustomize
+  options:
+    projectName: transpiler
+    dialect: openshift
+    imageNameReplaces:
+      - search: change.this.repository
+        replace: real.repository
+    configurations:
+      - kustomize_configs/type1.yaml
+      - kustomize_configs/type2.yaml
+    patchesJson6902:
+      - template: kustomize_patches/added-env.json
+        target:
+          group: apps.openshift.io
+          version: v1
+          kind: DeploymentConfig
+          name: mongodb
+        path: patches/added-env-patch.json
