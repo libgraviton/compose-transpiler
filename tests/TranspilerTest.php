@@ -135,18 +135,18 @@ class TranspilerTest extends TestCase {
         $expectedKubeYaml = YamlUtils::multiParse(__DIR__.'/resources/expected/kubeconfig/kube.yml');
 
         // kube.yml should be as expected
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             $expectedKubeYaml,
             YamlUtils::multiParse(__DIR__.'/generated/kube.yml')
         );
         // kube2.yml should be identical
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             $expectedKubeYaml,
             YamlUtils::multiParse(__DIR__.'/generated/kube2.yml')
         );
 
         // see kustomization.yaml is as expected
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             Yaml::parseFile(__DIR__.'/resources/expected/kubeconfig/kustomization.yaml'),
             Yaml::parseFile(__DIR__.'/generated/kustomization.yaml')
         );
