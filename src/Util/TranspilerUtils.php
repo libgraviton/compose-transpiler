@@ -8,6 +8,7 @@ use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Yaml\Yaml;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -72,6 +73,9 @@ class TranspilerUtils
             }
         );
 
+        // add our own templates
+        $templateLocations[] = __DIR__.'/../resources/templates/';
+
         $loader = new FilesystemLoader($templateLocations, $this->twigBaseDir);
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new Extension());
@@ -84,7 +88,15 @@ class TranspilerUtils
     }
 
     public function profileIsDirectory() {
-        return is_dir($this->profilePath);
+        if(is_dir($this->profilePath)) {
+            // add trailing slash to be sure..
+            if (substr($this->profilePath, -1) != '/') {
+                $this->profilePath .= '/';
+            }
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -97,15 +109,11 @@ class TranspilerUtils
             return [$this->profilePath => $this->outputPath];
         }
 
-        // add trailing slash to be sure..
-        if (substr($this->profilePath, -1) != '/') {
-            $this->profilePath .= '/';
-        }
-
         $finder = Finder::create()
             ->in($this->profilePath)
             ->files()
             ->ignoreDotFiles(true)
+            ->notName('transpiler.yml')
             ->name("*.yml");
 
         $resources = [];
@@ -113,7 +121,22 @@ class TranspilerUtils
             $resources[$file->getPathname()] = $file->getFilename();
         }
 
+        // is there a transpiler.yml?
+
         return $resources;
+    }
+
+    public function getTranspilerSettings() {
+        if (!$this->profileIsDirectory($this->profilePath)) {
+            return [];
+        }
+
+        $settingsFile = $this->profilePath.'transpiler.yml';
+        if ($this->fs->exists($settingsFile)) {
+            return Yaml::parse(file_get_contents($settingsFile));
+        }
+
+        return [];
     }
 
     /**

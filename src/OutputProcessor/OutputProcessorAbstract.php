@@ -21,13 +21,19 @@ abstract class OutputProcessorAbstract {
     protected $utils;
 
     /**
+     * @var array the content of the raw profile before anything
+     */
+    protected $profile;
+
+    /**
      * @var LoggerInterface
      */
     protected $logger;
 
-    public function __construct(TranspilerUtils $utils)
+    public function __construct(TranspilerUtils $utils, array $profile)
     {
         $this->utils = $utils;
+        $this->profile = $profile;
     }
 
     /**
@@ -45,4 +51,28 @@ abstract class OutputProcessorAbstract {
     }
 
     abstract function processFile(Transpiler $transpiler, string $filePath, array $fileContent);
+
+    public function addExposeServices() : bool {
+        return true;
+    }
+
+    protected function getOutputOptions() {
+        $settings = $this->utils->getTranspilerSettings();
+        if (isset($settings['outputProcessor']['options'])) {
+            return $settings['outputProcessor']['options'];
+        }
+        return [];
+    }
+
+    /**
+     * called at the beginning..
+     */
+    public function startup() {
+    }
+
+    /**
+     * called at the end..
+     */
+    public function finalize() {
+    }
 }

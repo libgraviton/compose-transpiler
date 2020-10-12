@@ -1,144 +1,129 @@
 <?php
 /**
- * main transpiler class
+ * KubeKustomize outputprocessor
  */
-namespace Graviton\ComposeTranspiler;
+namespace Graviton\ComposeTranspiler\OutputProcessor;
 
+use Graviton\ComposeTranspiler\Transpiler;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\Patterns;
 use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Neunerlei\Arrays\Arrays;
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
-use Symfony\Component\Console\Logger\ConsoleLogger;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Finder\Finder;
 
-/**
- * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
- * @license  https://opensource.org/licenses/MIT MIT License
- * @link     http://swisscom.ch
- */
-class KubeTransformer {
+class KubeKustomize extends OutputProcessorAbstract {
 
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
+    private $outputOptions = [];
 
-    private $filename;
-
-    private $outDirectory;
-
-    private $projectName;
-
-    private $fs;
-
-    // here we memorize the current component
-    private $currentComponent;
-
-    /**
-     * @var \SplFileInfo
-     */
-    private $currentFile;
-
-    // here we save all configmap members
     private $configMap = [];
-    private $secretEnvs = [];
-
     private $resources = [];
+    private $secretEnvs = [];
+    private $projectName = 'projectName';
 
-    /**
-     * @var array
-     */
-    private $loggerVerbosityLevelMap = [
-        LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::INFO   => OutputInterface::VERBOSITY_NORMAL
-    ];
+    // stuff that goes into kustomization.yaml
+    private $jsonPatches = [];
+    private $configurations = [];
 
-    public function __construct($filename, $outDirectory, OutputInterface $output)
-    {
-        $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
-        $this->fs = new Filesystem();
-        $this->filename = $filename;
-
-        // set projectName
-        $filenameParts = explode('.', basename($filename));
-        $this->projectName = $filenameParts[0];
-
-        $this->outDirectory = $outDirectory;
-        if (substr($this->outDirectory, -1) != '/') {
-            $this->outDirectory .= '/';
-        }
-    }
-
-    /**
-     * @param mixed|string $projectName
-     */
-    public function setProjectName($projectName): void
-    {
-        $this->projectName = $projectName;
-    }
-
-    public function transform()
-    {
-        // traverse all yml files
-        if (is_dir($this->filename)) {
-            $finder = Finder::create()
-                ->in($this->filename)
-                ->name(['*.yml', '*.yaml'])
-                ->notName(['kustomization.yaml']);
-
-            $files = iterator_to_array($finder);
-        } else {
-            $files = [new \SplFileInfo($this->filename)];
+    function processFile(Transpiler $transpiler, string $filePath, array $fileContent) {
+        if (isset($this->outputOptions['projectName'])) {
+            $this->projectName = $this->outputOptions['projectName'];
         }
 
-        $callable = \Closure::fromCallable([$this, 'traverseArray']);
-
-        foreach ($files as $file) {
-            $this->currentFile = $file;
-            $this->transformFile($file, $callable);
-        }
-
-        $this->loadEnvFiles();
-
-        ksort($this->configMap);
-
-        // write kustomization.yaml
-        $this->fs->dumpFile(
-            $this->outDirectory.'kustomization.yaml',
-            YamlUtils::dump($this->getKustomizationYaml())
+        $twigVars = array_merge(
+            $this->outputOptions,
+            $fileContent
         );
 
-        // write list of secret envs
-        if (count($this->secretEnvs) > 0) {
-            ksort($this->secretEnvs);
-            $this->fs->dumpFile(
-                $this->outDirectory . 'secretenvs.yaml',
-                YamlUtils::dump(array_keys($this->secretEnvs))
-            );
-        }
-    }
+        // render to kube yaml
+        $kubeYaml = $this->utils->renderTwigTemplate('kube.tmpl.yml', $twigVars);
 
-    private function transformFile(\SplFileInfo $file, callable $callable) {
-        $filename = $file->getPathname();
-        $parts = YamlUtils::multiParse($filename);
+        // transform secret/env refs
+        $parts = YamlUtils::multiParse($kubeYaml);
         $transformed = [];
+
+        $callable = \Closure::fromCallable([$this, 'traverseArray']);
 
         // the first job is to traverse all this and see for ${} matches..
         foreach ($parts as $part) {
             $transformed[] = Arrays::mapRecursive($part, $callable);
         }
 
-        // write yaml
-        $this->fs->dumpFile(
-            $this->outDirectory.$file->getBasename(),
-            YamlUtils::multiDump($transformed)
+        $yaml = YamlUtils::multiDump($transformed);
+
+        $this->utils->writeOutputFile($filePath, $yaml);
+        $this->logger->info('Wrote file "' . $filePath . '"');
+
+        // do we have any env file?
+        if ($transpiler->getBaseEnvFile()) {
+            $envFileHandler = new EnvFileHandler();
+            $vars = $envFileHandler->getValuesFromFile($transpiler->getBaseEnvFile());
+            foreach ($vars as $varName => $varValue) {
+                $this->configMap[$varName] = $varValue;
+            }
+        }
+
+        $this->resources[] = basename($filePath);
+    }
+
+    public function startup()
+    {
+        $this->outputOptions = $this->getOutputOptions();
+    }
+
+    public function finalize()
+    {
+        // write kustomization.yaml
+        ksort($this->configMap);
+        ksort($this->secretEnvs);
+
+        // do we have any json patches referenced?
+        if (isset($this->outputOptions['patchesJson6902'])) {
+            foreach ($this->outputOptions['patchesJson6902'] as $patch) {
+                if (!isset($patch['template'])) {
+                    $this->logger->warning('Patch element has no "template" set, skipping');
+                    continue;
+                }
+
+                $template = $patch['template'];
+                unset($patch['template']);
+                $this->jsonPatches[] = $patch;
+
+                // render template
+                $this->utils->writeOutputFile(
+                    $patch['path'],
+                    $this->utils->renderTwigTemplate($template, [])
+                );
+                $this->logger->info('Wrote file "'.$template.'"');
+            }
+        }
+        // any kustomize configurations?
+        if (isset($this->outputOptions['configurations'])) {
+            foreach ($this->outputOptions['configurations'] as $configuration) {
+                $this->utils->writeOutputFile(
+                    $configuration,
+                    $this->utils->renderTwigTemplate($configuration, [])
+                );
+                $this->configurations[] = $configuration;
+            }
+        }
+
+        // write kustomization.yaml
+        $this->utils->writeOutputFile(
+            'kustomization.yaml',
+            YamlUtils::dump($this->getKustomizationYaml())
         );
 
-        $this->resources[] = basename($filename);
+        // write list of secret envs
+        if (count($this->secretEnvs) > 0) {
+            ksort($this->secretEnvs);
+            $this->utils->writeOutputFile(
+                'secretenvs.yaml',
+                YamlUtils::dump(array_keys($this->secretEnvs))
+            );
+        }
+    }
+
+    public function addExposeServices() : bool {
+        return false;
     }
 
     /**
@@ -157,6 +142,19 @@ class KubeTransformer {
         // memorize component
         if ($path == 'metadata.name') {
             $this->currentComponent = $currentValue;
+        }
+
+        // any replacers in the image name?
+        if ($currentKey == 'image') {
+            if (isset($this->outputOptions['imageNameReplaces'])) {
+                foreach ($this->outputOptions['imageNameReplaces'] as $replace) {
+                    $currentValue = str_replace(
+                        $replace['search'],
+                        $replace['replace'],
+                        $currentValue
+                    );
+                }
+            }
         }
 
         // match ${VARNAME} stuff
@@ -225,34 +223,6 @@ class KubeTransformer {
         return $currentValue;
     }
 
-    private function loadEnvFiles() {
-        if (!is_dir($this->filename)) {
-            return;
-        }
-
-        $finder = Finder::create()
-            ->in($this->filename)
-            ->name(['*.env'])
-            ->sortByName(true);
-
-        $files = iterator_to_array($finder);
-        $envHandler = new EnvFileHandler();
-
-        foreach ($files as $file) {
-            $envs = $envHandler->interpretEnvFile($file->getPathname());
-            foreach ($envs as $name => $value) {
-                if (array_key_exists($name, $this->configMap)) {
-                    if ($value == 'null' || is_null($value)) {
-                        // you can force an erasure of a value by setting it to 'null'
-                        $this->configMap[$name] = '';
-                    } elseif (!empty($value)) {
-                        $this->configMap[$name] = $value;
-                    }
-                }
-            }
-        }
-    }
-
     private function getKustomizationYaml() {
         $yaml = [
             'apiVersion' => 'kustomize.config.k8s.io/v1beta1',
@@ -260,6 +230,16 @@ class KubeTransformer {
         ];
 
         $yaml['resources'] = $this->resources;
+
+        // patches?
+        if (!empty($this->jsonPatches)) {
+            $yaml['patchesJson6902'] = $this->jsonPatches;
+        }
+
+        // configurations?
+        if (!empty($this->configurations)) {
+            $yaml['configurations'] = $this->configurations;
+        }
 
         // configmap
         $mapEntries = [];

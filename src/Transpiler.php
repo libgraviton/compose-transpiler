@@ -5,6 +5,7 @@
 namespace Graviton\ComposeTranspiler;
 
 use Graviton\ComposeTranspiler\OutputProcessor\ComposeOnShell;
+use Graviton\ComposeTranspiler\OutputProcessor\KubeKustomize;
 use Graviton\ComposeTranspiler\OutputProcessor\OutputProcessorAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
@@ -70,11 +71,9 @@ class Transpiler {
 
         // wraps twig and fs operations
         $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
-        $this->outputProcessor = new ComposeOnShell($this->utils);
 
-        if (!is_null($this->logger)) {
-            $this->outputProcessor->setLogger($this->logger);
-        }
+        // set outputprocessor
+        $this->setOutputProcessor($this->utils->getTranspilerSettings());
     }
 
     /**
@@ -132,6 +131,10 @@ class Transpiler {
     public function transpile() {
         foreach ($this->utils->getResourcesToTranspile() as $source => $destination) {
             $this->transpileFile($source, $destination);
+        }
+
+        if ($this->outputProcessor instanceof OutputProcessorAbstract) {
+            $this->outputProcessor->finalize();
         }
     }
 
@@ -220,7 +223,7 @@ class Transpiler {
                     )
                 );
 
-                if (isset($serviceData['expose']) && is_array($serviceData['expose'])) {
+                if ($this->outputProcessor->addExposeServices() && isset($serviceData['expose']) && is_array($serviceData['expose'])) {
                     $recipe['services'] = $this->addExposeHost($recipe['services'], $thisServiceName, $serviceData['expose']);
                 }
 
@@ -286,19 +289,6 @@ class Transpiler {
                 $this->logger->info('Wrote "'.$scriptData['filename'].'"');
             }
         }
-
-        // is there an output template? if so, overwrite old one..
-        if (isset($profile['outputTemplate'])) {
-            // any params?
-            if (is_array($profile['outputTemplateParams'])) {
-                $recipe = array_merge($recipe, $profile['outputTemplateParams']);
-            }
-
-            $content = $this->getSingleFile($profile['outputTemplate'].'.tmpl.yml', $recipe, false);
-            $this->dumpFile($content, $destFile);
-            $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
-        }
-
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -401,8 +391,22 @@ class Transpiler {
         return $file;
     }
 
-    private function dumpFile($content, $file)
+    private function setOutputProcessor($profile)
     {
-        $this->utils->writeOutputFile($file, $content);
+        if (isset($profile['outputProcessor']['name'])) {
+            switch ($profile['outputProcessor']['name']) {
+                case 'kube-kustomize':
+                    $this->outputProcessor = new KubeKustomize($this->utils, $profile);
+                    break;
+            }
+        } else {
+            $this->outputProcessor = new ComposeOnShell($this->utils, $profile);
+        }
+
+        if (!is_null($this->logger)) {
+            $this->outputProcessor->setLogger($this->logger);
+        }
+
+        $this->outputProcessor->startup();
     }
 }

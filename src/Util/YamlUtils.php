@@ -16,8 +16,10 @@ class YamlUtils
 
     public static $glue = PHP_EOL."---".PHP_EOL;
 
-    public static function multiParse($filename) {
-        $content = file_get_contents($filename);
+    public static function multiParse($content) {
+        if (is_file($content)) {
+            $content = file_get_contents($content);
+        }
 
         // split by '---\n'
         $parts = preg_split('/---\n/m', $content);

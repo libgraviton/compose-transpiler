@@ -1,9 +1,8 @@
 <?php
-namespace Graviton\ComposeTranspiler\OutputProcessor;
-
 /**
- * ComposeOnShell outputprocessor abstract
+ * ComposeOnShell outputprocessor
  */
+namespace Graviton\ComposeTranspiler\OutputProcessor;
 
 use Graviton\ComposeTranspiler\Transpiler;
 use Graviton\ComposeTranspiler\Util\EnvFileHandler;
