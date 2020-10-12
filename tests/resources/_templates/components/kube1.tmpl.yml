@@ -1,0 +1,17 @@
+image: change.this.repository/kube1:${TAG}
+
+# for k8s
+_servicePorts:
+  - 9000
+_secretEnvs:
+  - SOME_SECRET_ENV
+  - SOME_SECRET_ENV_COMPOSED
+_exposes:
+    - name: kube1
+      port: 80
+
+environment:
+  SOME_ENV: '${SOME_ENV_VALUE:-default}'
+  SOME_ENV_COMPOSED: 'thisis${SOME_ENV_COMPOSED_VALUE:-default_composed}composed'
+  SOME_SECRET_ENV: '${SOME_SECRET_ENV_VALUE:-default_secret}'
+  SOME_SECRET_ENV_COMPOSED: 'thisisalso${SOME_SECRET_ENV_COMPOSED_VALUE:-default_secret_composed}composed'

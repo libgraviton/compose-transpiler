@@ -4,8 +4,10 @@ namespace Graviton\ComposeTranspilerTest;
 
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
 use Graviton\ComposeTranspiler\Transpiler;
+use Graviton\ComposeTranspiler\Util\YamlUtils;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
 class TranspilerTest extends TestCase {
@@ -19,11 +21,12 @@ class TranspilerTest extends TestCase {
         $releaseFile = null,
         $envFileAsserts = [],
         $baseEnvFile = null,
-        $inflect = false,
         $expectedScripts = []
     ) {
         $sut = new Transpiler(
             __DIR__.'/resources/_templates',
+            __DIR__.'/resources/'.$filename,
+            __DIR__.'/generated/gen.yml',
             $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
         );
 
@@ -35,15 +38,13 @@ class TranspilerTest extends TestCase {
             $sut->setBaseEnvFile($baseEnvFile);
         }
 
-        $sut->setInflect($inflect);
+        $sut->transpile();
 
-        $sut->transpile(__DIR__.'/resources/'.$filename, __DIR__.'/gen.yml');
-
-        $contents = Yaml::parseFile(__DIR__.'/gen.yml');
+        $contents = Yaml::parseFile(__DIR__.'/generated/gen.yml');
         $expected = Yaml::parseFile(__DIR__.'/resources/expected/'.$filename);
 
         foreach ($envFileAsserts as $envFileAssert) {
-            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/gen.env'));
+            $this->assertStringContainsString($envFileAssert, file_get_contents(__DIR__.'/generated/gen.env'));
         }
 
         $this->assertEquals($expected, $contents);
@@ -51,11 +52,9 @@ class TranspilerTest extends TestCase {
         // check for scripts if defined. 'key' is generated file, 'value' is what we expect..
         foreach ($expectedScripts as $genScript => $expectedScript) {
             $this->assertFileEquals($expectedScript, $genScript);
-            unlink($genScript);
         }
 
-        unlink(__DIR__.'/gen.yml');
-        if (!$inflect) unlink(__DIR__.'/gen.env');
+        (new Filesystem())->remove(__DIR__.'/generated');
     }
 
     public function dataProvider()
@@ -66,9 +65,8 @@ class TranspilerTest extends TestCase {
                 __DIR__.'/resources/releaseFile',
                 [],
                 null,
-                false,
                 [
-                    __DIR__.'/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
+                    __DIR__.'/generated/script.sh' => __DIR__.'/resources/expected/scripts/examplescript.sh'
                 ]
             ],
             [
@@ -105,14 +103,6 @@ class TranspilerTest extends TestCase {
                 __DIR__.'/resources/envFiles/baseEnv.env'
             ],
             [
-                "app5withenv.yml",
-                null,
-                [
-                ],
-                __DIR__.'/resources/envFiles/baseEnvInflect.env',
-                true
-            ],
-            [
                 "ymlenv.yml",
                 null,
                 [
@@ -122,6 +112,60 @@ class TranspilerTest extends TestCase {
                 "app6forInstance.yml",
             ]
         ];
+    }
+
+    /**
+     * here, we transpile the 'kubeprofile' directory and check the generated folder..
+     * it uses the kube-kustomize outputcontroller and specifies settings in the folder in transpiler.yml
+     */
+    public function testKubeDirTranspiling()
+    {
+        $sut = new Transpiler(
+            __DIR__.'/resources/_templates',
+            __DIR__.'/resources/kubeprofile',
+            __DIR__.'/generated/',
+            $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
+        );
+        $sut->setBaseEnvFile(__DIR__.'/resources/kubeprofile/kube.env');
+        $sut->setReleaseFile(__DIR__.'/resources/kubeprofile/kube.release');
+
+        $sut->transpile();
+
+        // kube.yml and kube2.yml should be identical, same as expected one..
+        $expectedKubeYaml = YamlUtils::multiParse(__DIR__.'/resources/expected/kubeconfig/kube.yml');
+
+        // kube.yml should be as expected
+        $this->assertEqualsCanonicalizing(
+            $expectedKubeYaml,
+            YamlUtils::multiParse(__DIR__.'/generated/kube.yml')
+        );
+        // kube2.yml should be identical
+        $this->assertEqualsCanonicalizing(
+            $expectedKubeYaml,
+            YamlUtils::multiParse(__DIR__.'/generated/kube2.yml')
+        );
+
+        // see kustomization.yaml is as expected
+        $this->assertEqualsCanonicalizing(
+            Yaml::parseFile(__DIR__.'/resources/expected/kubeconfig/kustomization.yaml'),
+            Yaml::parseFile(__DIR__.'/generated/kustomization.yaml')
+        );
+
+        // verify files that were copied are the same
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_configs/type1.yaml',
+            __DIR__.'/generated/kustomize_configs/type1.yaml',
+        );
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_configs/type2.yaml',
+            __DIR__.'/generated/kustomize_configs/type2.yaml',
+        );
+        $this->assertFileEquals(
+            __DIR__.'/resources/_templates/kustomize_patches/added-env.json',
+            __DIR__ . '/generated/patches/added-env-patch.json',
+        );
+
+        (new Filesystem())->remove(__DIR__.'/generated');
     }
 
     public function testReplacerRawFile()

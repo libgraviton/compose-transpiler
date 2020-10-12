@@ -4,22 +4,19 @@
  */
 namespace Graviton\ComposeTranspiler;
 
-use Graviton\ComposeTranspiler\Replacer\EnvInflectReplacer;
+use Graviton\ComposeTranspiler\OutputProcessor\ComposeOnShell;
+use Graviton\ComposeTranspiler\OutputProcessor\KubeKustomize;
+use Graviton\ComposeTranspiler\OutputProcessor\OutputProcessorAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
-use Graviton\ComposeTranspiler\Util\EnvFileHandler;
 use Graviton\ComposeTranspiler\Util\ProfileResolver;
-use Graviton\ComposeTranspiler\Util\Twig\Extension;
-use Graviton\ComposeTranspiler\Util\YamlUtils;
+use Graviton\ComposeTranspiler\Util\TranspilerUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
-use Twig\Environment;
-use Twig\Loader\FilesystemLoader;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -28,12 +25,15 @@ use Twig\Loader\FilesystemLoader;
  */
 class Transpiler {
 
-    private $baseDir;
-    private $baseTmplDir;
-    private $componentDir;
-    private $mixinsDir;
-    private $wrapperDir;
-    private $scriptsDir;
+    /**
+     * @var TranspilerUtils
+     */
+    private $utils;
+
+    /**
+     * @var OutputProcessorAbstract
+     */
+    private $outputProcessor;
 
     /**
      * @var Filesystem
@@ -46,11 +46,6 @@ class Transpiler {
     private $logger;
 
     /**
-     * @var bool
-     */
-    private $dirMode = false;
-
-    /**
      * @var array
      */
     private $loggerVerbosityLevelMap = [
@@ -58,50 +53,27 @@ class Transpiler {
         LogLevel::INFO   => OutputInterface::VERBOSITY_NORMAL
     ];
 
-    /**
-     * @var EnvFileHandler
-     */
-    private $envFileHandler;
-
-    /**
-     * @var \Twig_Environment
-     */
-    private $twig;
-
-    /**
-     * if we should inflect (= replace ENV values in yml instead of writing it into env file)
-     *
-     * @var bool
-     */
-    private $inflect = false;
-
-    /**
-     * stuff that is replaced at the end of the generation
-     *
-     * @var array
-     */
-    private $finalRegexes = [];
-
     private $releaseFile;
     private $envFileName;
     private $baseEnvFile;
 
-    public function __construct($baseDir, OutputInterface $output)
+    /**
+     * Transpiler constructor.
+     * @param string $baseDir path to the 'base directory', where all templates reside
+     * @param string $profilePath the 'input' path - either a single yaml file or a directory with many files
+     * @param string $outputPath where to output stuff
+     * @param OutputInterface $output
+     */
+    public function __construct($baseDir, $profilePath, $outputPath, OutputInterface $output)
     {
-        $this->baseDir = $baseDir;
-        $this->baseTmplDir = 'base/';
-        $this->componentDir = 'components/';
-        $this->mixinsDir = 'mixins/';
-        $this->wrapperDir = 'wrapper/';
-        $this->scriptsDir = 'scripts/';
         $this->logger = new ConsoleLogger($output, $this->loggerVerbosityLevelMap);
         $this->fs = new Filesystem();
-        $this->envFileHandler = new EnvFileHandler($this->logger);
 
-        $loader = new FilesystemLoader($this->baseDir);
-        $this->twig = new Environment($loader);
-        $this->twig->addExtension(new Extension());
-        $this->twig->addExtension(new YamlExtension());
+        // wraps twig and fs operations
+        $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
+
+        // set outputprocessor
+        $this->setOutputProcessor($this->utils->getTranspilerSettings());
     }
 
     /**
@@ -129,6 +101,14 @@ class Transpiler {
     }
 
     /**
+     * @return mixed
+     */
+    public function getEnvFileName()
+    {
+        return $this->envFileName;
+    }
+
+    /**
      * set BaseEnvFile
      *
      * @param mixed $baseEnvFile baseEnvFile
@@ -141,35 +121,21 @@ class Transpiler {
     }
 
     /**
-     * set Inflect
-     *
-     * @param bool $inflect inflect
-     *
-     * @return void
+     * @return mixed
      */
-    public function setInflect($inflect)
+    public function getBaseEnvFile()
     {
-        $this->inflect = $inflect;
+        return $this->baseEnvFile;
     }
 
-    /**
-     * @param array $finalRegexes
-     */
-    public function setFinalRegexes(array $finalRegexes)
-    {
-        $this->finalRegexes = $finalRegexes;
-    }
+    public function transpile() {
+        foreach ($this->utils->getResourcesToTranspile() as $source => $destination) {
+            $this->transpileFile($source, $destination);
+        }
 
-    /**
-     * set DirMode
-     *
-     * @param bool $dirMode dirMode
-     *
-     * @return void
-     */
-    public function setDirMode($dirMode)
-    {
-        $this->dirMode = $dirMode;
+        if ($this->outputProcessor instanceof OutputProcessorAbstract) {
+            $this->outputProcessor->finalize();
+        }
     }
 
     /**
@@ -184,7 +150,7 @@ class Transpiler {
      *
      * @return bool
      */
-    public function transpile($profileFile, $destFile)
+    private function transpileFile($profileFile, $destFile)
     {
         $profile = (new ProfileResolver($profileFile))->resolve();
 
@@ -193,14 +159,9 @@ class Transpiler {
             if ($destFile == '-') {
                 echo file_get_contents($profileFile);
             } else {
-                $this->fs->copy($profileFile, $destFile);
+                $this->utils->getFs()->copy($profileFile, $destFile);
             }
             return true;
-        }
-
-        // check for final regexes
-        if (isset($profile['finalRegexes']) && is_array($profile['finalRegexes'])) {
-            $this->setFinalRegexes($profile['finalRegexes']);
         }
 
         // get header..
@@ -227,7 +188,7 @@ class Transpiler {
                 $templateName = $serviceData['template'];
             }
 
-            $file = $this->componentDir.$templateName.'.tmpl.yml';
+            $file = $templateName.'.tmpl.yml';
 
             // multiple services using the same params?
             $instanceCount = 1;
@@ -262,7 +223,7 @@ class Transpiler {
                     )
                 );
 
-                if (isset($serviceData['expose']) && is_array($serviceData['expose'])) {
+                if ($this->outputProcessor->addExposeServices() && isset($serviceData['expose']) && is_array($serviceData['expose'])) {
                     $recipe['services'] = $this->addExposeHost($recipe['services'], $thisServiceName, $serviceData['expose']);
                 }
 
@@ -282,27 +243,27 @@ class Transpiler {
 
         $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
 
-        $renderedYaml = $this->dumpYaml($recipe, $destFile);
+        // replace $TAG vars
+        $replacer = new VersionTagReplacer($this->releaseFile);
+        $replacer->setLogger($this->logger);
+        $recipe = $replacer->replaceArray($recipe);
 
-        // write generated yaml file
-
-        $this->logger->info('Wrote file "'.$destFile.'"');
+        // let outputprocessor do with that structure what he wants..
+        $this->outputProcessor->processFile($this, $destFile, $recipe);
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {
 
-            $parsedYaml = Yaml::parse($renderedYaml);
-
             // compose image list
             $imageList = [];
-            foreach ($parsedYaml['services'] as $service) {
+            foreach ($recipe['services'] as $service) {
                 if (isset($service['image'])) {
                     $imageList[] = $service['image'];
                 }
             }
 
             $baseScriptData = [
-                'recipe' => Yaml::parse($renderedYaml),
+                'recipe' => $recipe,
                 'recipePath' => $destFile,
                 'envFilePath' => $this->envFileName,
                 'imageList' => $imageList,
@@ -323,25 +284,11 @@ class Transpiler {
                     $scriptName = $scriptData['template'];
                 }
 
-                $scriptDestination = pathinfo($destFile,PATHINFO_DIRNAME).'/'.$scriptData['filename'];
-                $file = $this->scriptsDir.$scriptName.'.tmpl';
-                $this->fs->dumpFile($scriptDestination, $this->getSingleFile($file, $scriptData, false));
-                $this->logger->info('Wrote "'.$scriptDestination.'"');
+                $file = $scriptName.'.tmpl';
+                $this->utils->writeOutputFile($scriptData['filename'], $this->getSingleFile($file, $scriptData, false));
+                $this->logger->info('Wrote "'.$scriptData['filename'].'"');
             }
         }
-
-        // is there an output template? if so, overwrite old one..
-        if (isset($profile['outputTemplate'])) {
-            // any params?
-            if (is_array($profile['outputTemplateParams'])) {
-                $recipe = array_merge($recipe, $profile['outputTemplateParams']);
-            }
-
-            $content = $this->getSingleFile($this->baseTmplDir.$profile['outputTemplate'].'.tmpl.yml', $recipe, false);
-            $this->dumpFile($content, $destFile);
-            $this->logger->info('OVERWROTE "'.$destFile.'" as we have an outputTemplate defined.');
-        }
-
     }
 
     private function getBaseTemplate($defaultTemplate, $data)
@@ -351,7 +298,7 @@ class Transpiler {
             unset($data['template']);
         }
 
-        return $this->resolveSingleComponent($this->baseTmplDir.$defaultTemplate.'.tmpl.yml', $data);
+        return $this->resolveSingleComponent($defaultTemplate.'.tmpl.yml', $data);
     }
 
     /**
@@ -376,7 +323,7 @@ class Transpiler {
                 if (is_null($mixinData)) {
                     $mixinData = [];
                 }
-                $mixin = $this->getSingleFile($this->mixinsDir.$mixinName.'.tmpl.yml', array_merge($data, $mixinData));
+                $mixin = $this->getSingleFile($mixinName.'.tmpl.yml', array_merge($data, $mixinData));
                 $base = \Ckr\Util\ArrayMerger::doMerge($base, $mixin);
             }
         }
@@ -392,7 +339,7 @@ class Transpiler {
                 if (is_null($wrapperData)) {
                     $wrapperData = [];
                 }
-                $base = $this->getSingleFile($this->wrapperDir.$wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
+                $base = $this->getSingleFile($wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
             }
         }
 
@@ -414,8 +361,7 @@ class Transpiler {
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
-        $services[$currentServiceName.'-expose'] =
-            $this->getSingleFile($this->componentDir.'_expose.tmpl.yml', $data);
+        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose.tmpl.yml', $data);
         return $services;
     }
 
@@ -434,7 +380,7 @@ class Transpiler {
      */
     private function getSingleFile($file, $data = [], $isYaml = true)
     {
-        $file = $this->twig->load($file)->render($data);
+        $file = $this->utils->renderTwigTemplate($file, $data);
         if ($isYaml) {
             try {
                 return Yaml::parse($file);
@@ -445,112 +391,22 @@ class Transpiler {
         return $file;
     }
 
-    /**
-     * generate the companion env file to the yml file
-     *
-     * @param string $destFile    destination file as fallback
-     * @param string $content the yml content
-     */
-    private function generateEnvFile($destFile, $content)
+    private function setOutputProcessor($profile)
     {
-        // check filename
-        if (is_null($this->envFileName)) {
-            $envFile = $destFile;
-            if (substr($envFile, -4) == '.yml') {
-                $envFile = substr($envFile, 0, -4) . '.env';
+        if (isset($profile['outputProcessor']['name'])) {
+            switch ($profile['outputProcessor']['name']) {
+                case 'kube-kustomize':
+                    $this->outputProcessor = new KubeKustomize($this->utils, $profile);
+                    break;
             }
-            $this->envFileName = $envFile;
-        }
-
-        preg_match_all('/\$\{([a-z0-9_-]*)\}/i', $content, $matches);
-
-        $vars = array_unique($matches[1]);
-        sort($vars);
-
-        // flip keys & fill lines
-        $varContents = array_map(function($value) {
-            return $value."=";
-        }, $vars);
-        $vars = array_combine($vars, $varContents);
-
-        // special env TAG we don't want here..
-        if (isset($vars['TAG'])) {
-            unset($vars['TAG']);
-        }
-
-        // do we have a base file?
-        if ($this->baseEnvFile) {
-            $this->envFileHandler->writeEnvFromArrayNoOverwrite(
-                $this->envFileHandler->getValuesFromFile($this->baseEnvFile),
-                $this->envFileName
-            );
-        }
-
-        $this->envFileHandler->writeEnvFromArrayNoOverwrite($vars, $this->envFileName);
-    }
-
-    private function dumpFile($content, $file)
-    {
-        // our replacers
-        $replacer = new VersionTagReplacer($this->releaseFile);
-        $replacer->setLogger($this->logger);
-        $replacer->init();
-        $content = $replacer->replace($content);
-
-        $this->fs->dumpFile($file, $content);
-    }
-
-    /**
-     * dumps a yaml file in a nicely formatted way
-     *
-     * @param array  $content the content
-     * @param string $file    target file
-     *
-     * @throws \Exception
-     *
-     * @return mixed|string
-     */
-    private function dumpYaml($content, $file)
-    {
-        // our replacers
-        $replacer = new VersionTagReplacer($this->releaseFile);
-        $replacer->setLogger($this->logger);
-        $content = $replacer->replaceArray($content);
-
-        if ($this->inflect) {
-            // inflect requested
-            $replacer = new EnvInflectReplacer($this->baseEnvFile);
-            $replacer->setLogger($this->logger);
-            $content = $replacer->replaceArray($content);
-        }
-
-        $content = YamlUtils::dump($content);
-
-        // do we need to generate env file?
-        if (!$this->inflect) {
-            $this->generateEnvFile($file, $content);
-            $this->logger->info('Wrote file "' . $this->envFileName . '"');
-        }
-
-        // final replacers there?
-        $fileContent = $content;
-        if (is_array($this->finalRegexes) && !empty($this->finalRegexes)) {
-            foreach ($this->finalRegexes as $pattern) {
-                $patternParts = explode('::', $pattern);
-                if (count($patternParts) != 2) {
-                    $this->logger->error('Regex pattern "'.$pattern.'" has wrong form, check help');
-                }
-                $fileContent = preg_replace($patternParts[0], $patternParts[1], $fileContent);
-            }
-        }
-
-        if ($file == '-') { // stdout
-            echo $fileContent;
         } else {
-            $this->fs->dumpFile($file, $fileContent);
+            $this->outputProcessor = new ComposeOnShell($this->utils, $profile);
         }
 
-        // return content WITHOUT finalRegexes (so templates have access to all)
-        return $content;
+        if (!is_null($this->logger)) {
+            $this->outputProcessor->setLogger($this->logger);
+        }
+
+        $this->outputProcessor->startup();
     }
 }

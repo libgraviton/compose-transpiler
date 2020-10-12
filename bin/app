@@ -7,5 +7,4 @@ use Symfony\Component\Console\Application;
 $application = new Application('compose-transpiler');
 $application->add(new \Graviton\ComposeTranspiler\Command\TranspileCommand());
 $application->add(new \Graviton\ComposeTranspiler\Command\VerifyImagesCommand());
-$application->add(new \Graviton\ComposeTranspiler\Command\KubeTransformCommand());
 $application->run();

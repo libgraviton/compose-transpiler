@@ -1,0 +1,4 @@
+components:
+  kube1:
+    expose:
+      doExpose: true
