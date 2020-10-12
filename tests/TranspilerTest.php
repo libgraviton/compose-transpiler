@@ -164,6 +164,8 @@ class TranspilerTest extends TestCase {
             __DIR__.'/resources/_templates/kustomize_patches/added-env.json',
             __DIR__ . '/generated/patches/added-env-patch.json',
         );
+
+        (new Filesystem())->remove(__DIR__.'/generated');
     }
 
     public function testReplacerRawFile()
