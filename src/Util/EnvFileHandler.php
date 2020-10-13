@@ -78,7 +78,20 @@ class EnvFileHandler
             }
         }
 
-        return json_decode($process->getOutput(), true);
+        $values = json_decode($process->getOutput(), true);
+
+        // cleanup these if they exist
+        $cleanups = [
+            '_', 'PWD', 'SHLVL', 'CWD'
+        ];
+
+        foreach ($cleanups as $cleanup) {
+            if (isset($values[$cleanup])) {
+                unset($values[$cleanup]);
+            }
+        }
+
+        return $values;
     }
 
     public function writeEnvFromArrayNoOverwrite($values, $targetFile)

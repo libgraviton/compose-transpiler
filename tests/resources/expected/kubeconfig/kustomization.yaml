@@ -18,7 +18,7 @@ configMapGenerator:
   -
     name: transpiler
     literals:
-      - DOMAIN=DOMAIN=.local.me
+      - DOMAIN=.local.me
       - SOME_ENV_COMPOSED_VALUE=default_composed
       - SOME_ENV_VALUE=default
 vars:

@@ -55,9 +55,9 @@ class KubeKustomize extends OutputProcessorAbstract {
         // do we have any env file?
         if ($transpiler->getBaseEnvFile()) {
             $envFileHandler = new EnvFileHandler($this->utils);
-            $vars = $envFileHandler->getValuesFromFile($transpiler->getBaseEnvFile());
+            $vars = $envFileHandler->interpretEnvFile($transpiler->getBaseEnvFile());
             foreach ($vars as $varName => $varValue) {
-                if (is_string($varName)) {
+                if (is_string($varName) && $varName != '_') {
                     $this->configMap[$varName] = $varValue;
                 }
             }
