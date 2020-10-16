@@ -8,12 +8,12 @@ spec:
   selector:
     run: kube1
   replicas: 2
+  revisionHistoryLimit: 3
   template:
     metadata:
       labels:
         run: kube1
     spec:
-      revisionHistoryLimit: 3
       containers:
         -
           name: kube1
