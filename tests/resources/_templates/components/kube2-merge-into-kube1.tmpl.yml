@@ -1,0 +1,16 @@
+image: change.this.repository/kube2:${TAG}
+
+# for k8s
+_secretEnvs:
+  - SOME_SECRET_ENV_KUBE2
+  - SOME_SECRET_ENV_COMPOSED
+# internal only
+_containerPorts:
+  - 8000
+# for the cluster service
+_servicePorts:
+  - 5555
+
+environment:
+  SOME_ENV: '${SOME_ENV_VALUE_KUBE2:-default-kube2}'
+  SOME_SECRET_ENV: '${SOME_SECRET_ENV_KUBE2:-default_secret-kube2}'

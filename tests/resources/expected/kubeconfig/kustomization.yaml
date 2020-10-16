@@ -21,6 +21,7 @@ configMapGenerator:
       - DOMAIN=.local.me
       - SOME_ENV_COMPOSED_VALUE=default_composed
       - SOME_ENV_VALUE=default
+      - SOME_ENV_VALUE_KUBE2=default-kube2
 vars:
   -
     name: DOMAIN
@@ -46,3 +47,11 @@ vars:
       name: transpiler
     fieldref:
       fieldpath: data.SOME_ENV_VALUE
+  -
+    name: SOME_ENV_VALUE_KUBE2
+    objref:
+      apiVersion: v1
+      kind: ConfigMap
+      name: transpiler
+    fieldref:
+      fieldpath: data.SOME_ENV_VALUE_KUBE2

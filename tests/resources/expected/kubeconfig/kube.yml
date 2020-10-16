@@ -41,6 +41,28 @@ spec:
           ports:
             -
               containerPort: 9000
+        -
+          name: kube2-merge-into-kube1
+          image: 'real.repository/kube2:v1.0'
+          imagePullPolicy: Always
+          env:
+            -
+              name: SOME_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: transpiler
+                  key: SOME_ENV_VALUE_KUBE2
+            -
+              name: SOME_SECRET_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: transpiler
+                  key: SOME_SECRET_ENV_KUBE2
+          ports:
+            -
+              containerPort: 5555
+            -
+              containerPort: 8000
 
 ---
 apiVersion: v1
@@ -58,6 +80,11 @@ spec:
       targetPort: 9000
       protocol: TCP
       name: kube19000
+    -
+      port: 5555
+      targetPort: 5555
+      protocol: TCP
+      name: kube15555
 
 ---
 apiVersion: route.openshift.io/v1

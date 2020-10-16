@@ -23,10 +23,18 @@ class KubeKustomize extends OutputProcessorAbstract {
     private $jsonPatches = [];
     private $configurations = [];
 
+    // these fields in the *twig base template* are global to the service (meaning deployment in K8 terms), not the container
+    private $serviceMetaFields = [
+        '_servicePorts'
+    ];
+
     function processFile(Transpiler $transpiler, string $filePath, array $fileContent, array $profile) {
         if (isset($this->outputOptions['projectName'])) {
             $this->projectName = $this->outputOptions['projectName'];
         }
+
+        // make fundamental alterations here.. like merging containers together in a pod..
+        $fileContent = $this->structureAlterations($fileContent, $profile);
 
         $twigVars = array_merge(
             $this->outputOptions,
@@ -278,4 +286,58 @@ class KubeKustomize extends OutputProcessorAbstract {
         return $yaml;
     }
 
+    /**
+     * here some magic happens (perhaps dark), where we ensure a bit a different structure *for the twig templates*
+     * that allows us to be more complex there - like rendering multiple compose services inside 1 pod..
+     *
+     * @param array $structure
+     * @param array $profile
+     * @return array
+     */
+    private function structureAlterations(array $structure, array $profile) {
+
+        if (isset($structure['services'])) {
+            // first, that we have a 'containers' array under each service
+            foreach ($structure['services'] as $name => &$innerService) {
+                $innerService['containers'] = [array_merge($innerService, ['name' => $name])];
+            }
+
+            // do we need to merge containers together as pods? drop those that are merged..
+            $services = [];
+            foreach ($structure['services'] as $name => $service) {
+                // is there a merge defined?
+                if (isset($profile['components'][$name]['mergeIntoComponentPod'])) {
+                    $mergeIntoName = $profile['components'][$name]['mergeIntoComponentPod'];
+                    if (!isset($structure['services'][$mergeIntoName])) {
+                        throw new \RuntimeException(
+                            "Service ".$name." wants to be merge into ".$mergeIntoName.", but this doesn't exist!"
+                        );
+                    }
+
+                    // merge into target
+                    $targetService = $structure['services'][$mergeIntoName];
+                    // merge global arguments
+                    foreach ($this->serviceMetaFields as $fieldName) {
+                        if (!isset($service[$fieldName])) {
+                            continue;
+                        }
+                        $targetService[$fieldName] = array_merge($targetService[$fieldName], $service[$fieldName]);
+                    }
+                    // add to target containers
+                    $targetService['containers'][] = array_merge($service, ['name' => $name]);
+
+                    // add to global services
+                    $services[$mergeIntoName] = $targetService;
+
+                    // skip now as we don't want to add this as single service
+                    continue;
+                }
+
+                $services[$name] = $service;
+            }
+            $structure['services'] = $services;
+        }
+
+        return $structure;
+    }
 }

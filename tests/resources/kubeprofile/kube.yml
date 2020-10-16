@@ -1,4 +1,4 @@
 components:
   kube1:
-    expose:
-      doExpose: true
+  kube2-merge-into-kube1:
+    mergeIntoComponentPod: kube1

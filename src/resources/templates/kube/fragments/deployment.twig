@@ -1,5 +1,7 @@
 {% import "kube/macros.twig" as macros %}
 
+{% set volumeList = [] %}
+
 ---
 
 {% if dialect == "openshift" %}
@@ -29,7 +31,10 @@ spec:
       revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
 {% endif %}
       containers:
-        - name: {{ serviceName }}
+
+{% for service in service.containers %}
+
+        - name: {{ service.name }}
           image: {{ service.image }}
           imagePullPolicy: Always
 {% if service.entrypoint %}
@@ -65,11 +70,18 @@ spec:
             - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
               mountPath: {{ volume }}
 {% endfor %}
+
+{% set volumeList = volumeList|merge(service._volumes) %}
+
 {% endif %}
 
-{% if service._volumes %}
+{% endfor %}
+
+{# end container loop #}
+
+{% if not volumeList is empty %}
       volumes:
-{% for volume in service._volumes %}
+{% for volume in volumeList %}
         - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
           persistentVolumeClaim:
             claimName: {{ serviceName }}{{ macros.volumePathToName(volume) }}-claim

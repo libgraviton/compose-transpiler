@@ -80,7 +80,6 @@ class TranspilerUtils
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new Extension());
         $this->twig->addExtension(new YamlExtension());
-
     }
 
     public function renderTwigTemplate($templateName, $templateData) {
