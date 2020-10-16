@@ -22,14 +22,14 @@ spec:
       run: {{ serviceName }}
 {% endif %}
   replicas: {{ service.replicas|default('1') }}
+{% if deploymentConfigHistoryLimit %}
+  revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
+{% endif %}
   template:
     metadata:
       labels:
         run: {{ serviceName }}
     spec:
-{% if deploymentConfigHistoryLimit %}
-      revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
-{% endif %}
       containers:
 
 {% for service in service.containers %}
