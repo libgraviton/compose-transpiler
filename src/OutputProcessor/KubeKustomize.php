@@ -319,6 +319,11 @@ class KubeKustomize extends OutputProcessorAbstract {
             // do we need to merge containers together as pods? drop those that are merged..
             $services = [];
             foreach ($structure['services'] as $name => $service) {
+                // already defined in target array?
+                if (isset($services[$name])) {
+                    continue;
+                }
+
                 // is there a merge defined?
                 if (isset($profile['components'][$name]['mergeIntoComponentPod'])) {
                     $mergeIntoName = $profile['components'][$name]['mergeIntoComponentPod'];
