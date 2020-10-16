@@ -44,6 +44,9 @@ spec:
       labels:
         run: {{ serviceName }}
     spec:
+{% if deploymentConfigHistoryLimit %}
+      revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
+{% endif %}
       containers:
         - name: {{ serviceName }}
           image: {{ service.image }}

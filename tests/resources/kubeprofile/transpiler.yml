@@ -3,6 +3,7 @@ outputProcessor:
   options:
     projectName: transpiler
     dialect: openshift
+    deploymentConfigHistoryLimit: 3
     imageNameReplaces:
       - search: change.this.repository
         replace: real.repository

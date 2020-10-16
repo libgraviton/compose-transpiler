@@ -13,6 +13,7 @@ spec:
       labels:
         run: kube1
     spec:
+      revisionHistoryLimit: 3
       containers:
         -
           name: kube1
