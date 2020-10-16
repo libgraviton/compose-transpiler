@@ -41,7 +41,6 @@ spec:
           ports:
             -
               containerPort: 9000
-              hostPort: 9000
           volumeMounts:
             -
               name: kube1-data
@@ -66,10 +65,8 @@ spec:
           ports:
             -
               containerPort: 9000
-              hostPort: 9001
             -
               containerPort: 8000
-              hostPort: 8000
           volumeMounts:
             -
               name: kube2-merge-into-kube1-data
