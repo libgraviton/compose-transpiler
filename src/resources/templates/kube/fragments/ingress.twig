@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ serviceName }}{{ expose.port }}
+  annotations:
+    kubernetes.io/ingress.class: traefik
+{% if expose.basicAuth %}
+    ingress.kubernetes.io/auth-type: "basic"
+    ingress.kubernetes.io/auth-secret: "basic-auth"
+{% endif %}
+
+spec:
+  rules:
+  - host: '{{ expose.name }}${DOMAIN}'
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ serviceName }}
+          servicePort: {{ serviceName }}{{ expose.port }}
+  tls:
+    - secretName: tls-cert

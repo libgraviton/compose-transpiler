@@ -1,0 +1,23 @@
+{% macro volumePathToName(name) %}{{ name|replace({'/': '-'}) }}{% endmacro %}
+
+{% macro envList(envList, _secretEnvs, indent = 8) %}
+{{ strRepeat(" ", indent) }}env:
+{% for envName, envValue in envList %}
+
+{# if env value is only a placeholder, write valueFrom as key! #}
+{% if (envValue|trim starts with '${' and envValue|trim ends with '}') %}{% set valueKeyName = "valueFrom" %}{% else %}{% set valueKeyName = "value" %}{% endif %}
+
+{# is this a secret env? prefix its value! #}
+{% if envName in _secretEnvs %}
+{% set valuePrefix = "[SECRET]" %}
+{% else %}
+{% set valuePrefix = "" %}
+{% endif %}
+
+{{ strRepeat(" ", indent + 1) }}- name: {{ envName}}
+{{ strRepeat(" ", indent + 1) }}  {{valueKeyName}}: {{ (valuePrefix ~ envValue) | replace({"\n": " "}) | yaml_encode(inline = 0) | raw }}
+
+{% endfor %}
+{% endmacro %}
+
+{% macro command(command) %}{% if command is iterable %}{{ command|yaml_encode(inline = 0)|raw }}{% else %}["{{ command|join("\",\"")|replace({"\n": " ", "\"": "\\\""})|raw }}"]{% endif %}{% endmacro %}

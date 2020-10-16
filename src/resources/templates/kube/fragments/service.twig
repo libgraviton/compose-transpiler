@@ -1,0 +1,19 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ serviceName }}
+  labels:
+    run: {{ serviceName }}-svc
+spec:
+  selector:
+    run: {{ serviceName }}
+  ports:
+{% for port in service._servicePorts %}
+    - port: {{ port }}
+      targetPort: {{ port }}
+      protocol: TCP
+      name: {{ serviceName }}{{ port }}
+{% endfor %}

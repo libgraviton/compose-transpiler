@@ -1,0 +1,30 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ serviceName }}
+spec:
+{% if service._backOffLimit %}
+  backoffLimit: {{ service._backOffLimit }}
+{% endif %}
+  template:
+    spec:
+      containers:
+      - name: {{ serviceName }}
+        image: {{ service.image }}
+        imagePullPolicy: Always
+{% if service.entrypoint %}
+        command: {{ macros.command(service.entrypoint) }}
+{% endif %}
+{% if service.command %}
+        {% if service._commandIsArgs %}args{% else %}command{% endif %}: {{ macros.command(service.command) }}
+{% endif %}
+
+{% if service.environment %}
+{{ macros.envList(service.environment, _secretEnvs, 8) }}
+{% endif %}
+
+      restartPolicy: Never

@@ -1,0 +1,50 @@
+{% import "kube/macros.twig" as macros %}
+
+{# secret env list? #}
+{% if service._secretEnvs is defined %}
+  {% set _secretEnvs=service._secretEnvs %}
+{% else %}
+  {% set _secretEnvs=[] %}
+{% endif %}
+
+{% if not service._type %}
+  {% set type="deployment" %}
+{% else %}
+  {% set type=service._type %}
+{% endif %}
+
+{# type deployment/deploymentconfig #}
+{% if type == "deployment" %}
+  {{- include('kube/fragments/deployment.twig') }}
+{% endif %}
+
+{# type job #}
+{% if type == "job" %}
+  {{- include('kube/fragments/job.twig') }}
+{% endif %}
+
+{# type service #}
+{% if service._servicePorts %}
+  {{- include('kube/fragments/service.twig') }}
+{% endif %}
+
+{# type pvc #}
+{% if service._volumes %}
+{% for volume in service._volumes %}
+  {{- include('kube/fragments/volume.twig') }}
+{% endfor %}
+{% endif %}
+
+
+{# type route / ingress #}
+{% if service._exposes %}
+
+{% for expose in service._exposes %}
+  {%- if dialect == "openshift" %}
+    {{- include('kube/fragments/route.twig') }}
+  {%- else %}
+    {{- include('kube/fragments/ingress.twig') }}
+  {%- endif %}
+{% endfor %}
+
+{% endif %}

@@ -1,0 +1,11 @@
+{# any hint which kube platform we are on? #}
+{% if not dialect %}
+{% set dialect="k8s" %}
+{% endif %}
+
+{% for serviceName, service in services %}
+
+{{ include('kube/service.twig') }}
+
+{% endfor %}
+

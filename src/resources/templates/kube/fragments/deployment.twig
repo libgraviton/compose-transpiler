@@ -1,0 +1,77 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+
+{% if dialect == "openshift" %}
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+{% else %}
+apiVersion: apps/v1
+kind: Deployment
+{% endif %}
+metadata:
+  name: {{ serviceName }}
+spec:
+  selector:
+{% if dialect == "openshift" %}
+    run: {{ serviceName }}
+{% else %}
+    matchLabels:
+      run: {{ serviceName }}
+{% endif %}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: {{ serviceName }}
+    spec:
+{% if deploymentConfigHistoryLimit %}
+      revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
+{% endif %}
+      containers:
+        - name: {{ serviceName }}
+          image: {{ service.image }}
+          imagePullPolicy: Always
+{% if service.entrypoint %}
+          command: {{ macros.command(service.entrypoint) }}
+{% endif %}
+{% if service.command %}
+          args: {{ macros.command(service.command) }}
+{% endif %}
+
+{% if service.environment %}
+{{ macros.envList(service.environment, _secretEnvs, 10) }}
+{% endif %}
+
+{# do we have service or container ports? #}
+{% set declaredPorts = [] %}
+{% if service._servicePorts %}
+{% set declaredPorts = declaredPorts|merge(service._servicePorts) %}
+{% endif %}
+{% if service._containerPorts %}
+{% set declaredPorts = declaredPorts|merge(service._containerPorts) %}
+{% endif %}
+
+{% if not declaredPorts is empty %}
+          ports:
+{% for port in declaredPorts %}
+            - containerPort: {{ port }}
+{% endfor %}
+{% endif %}
+
+{% if service._volumes %}
+          volumeMounts:
+{% for volume in service._volumes %}
+            - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
+              mountPath: {{ volume }}
+{% endfor %}
+{% endif %}
+
+{% if service._volumes %}
+      volumes:
+{% for volume in service._volumes %}
+        - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
+          persistentVolumeClaim:
+            claimName: {{ serviceName }}{{ macros.volumePathToName(volume) }}-claim
+{% endfor %}
+{% endif %}

@@ -1,0 +1,13 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ serviceName }}{{ macros.volumePathToName(volume) }}-claim
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce

@@ -1,0 +1,26 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ serviceName }}{{ expose.port }}
+spec:
+  host: '{{ expose.name }}${DOMAIN}'
+  port:
+    targetPort: {{ serviceName }}{{ expose.port }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: {{ serviceName }}
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+    - conditions:
+        - status: 'True'
+          type: Admitted
+      routerName: router
+      wildcardPolicy: None
