@@ -62,10 +62,8 @@ spec:
 {% for port in declaredPorts %}
 {% if port is iterable %}
             - containerPort: {{ port.containerPort }}
-              hostPort: {{ port.hostPort }}
 {% else %}
             - containerPort: {{ port }}
-              hostPort: {{ port }}
 {% endif %}
 {% endfor %}
 {% endif %}
