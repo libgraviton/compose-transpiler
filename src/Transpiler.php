@@ -249,7 +249,7 @@ class Transpiler {
         $recipe = $replacer->replaceArray($recipe);
 
         // let outputprocessor do with that structure what he wants..
-        $this->outputProcessor->processFile($this, $destFile, $recipe);
+        $this->outputProcessor->processFile($this, $destFile, $recipe, $profile);
 
         // are there any scripts to generate?
         if (isset($profile['scripts']) && is_array($profile['scripts'])) {

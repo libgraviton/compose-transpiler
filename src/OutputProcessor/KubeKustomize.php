@@ -23,7 +23,7 @@ class KubeKustomize extends OutputProcessorAbstract {
     private $jsonPatches = [];
     private $configurations = [];
 
-    function processFile(Transpiler $transpiler, string $filePath, array $fileContent) {
+    function processFile(Transpiler $transpiler, string $filePath, array $fileContent, array $profile) {
         if (isset($this->outputOptions['projectName'])) {
             $this->projectName = $this->outputOptions['projectName'];
         }
@@ -34,7 +34,7 @@ class KubeKustomize extends OutputProcessorAbstract {
         );
 
         // render to kube yaml
-        $kubeYaml = $this->utils->renderTwigTemplate('kube.tmpl.yml', $twigVars);
+        $kubeYaml = $this->utils->renderTwigTemplate('kube.twig', $twigVars);
 
         // transform secret/env refs
         $parts = YamlUtils::multiParse($kubeYaml);

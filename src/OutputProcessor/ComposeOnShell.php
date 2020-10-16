@@ -17,7 +17,7 @@ class ComposeOnShell extends OutputProcessorAbstract {
 
     private $envFileName;
 
-    function processFile(Transpiler $transpiler, string $filePath, array $fileContent) {
+    function processFile(Transpiler $transpiler, string $filePath, array $fileContent, array $profile) {
         $this->transpiler = $transpiler;
         $this->envFileHandler = new EnvFileHandler($this->utils);
 

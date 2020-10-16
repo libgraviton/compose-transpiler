@@ -50,7 +50,17 @@ abstract class OutputProcessorAbstract {
         }
     }
 
-    abstract function processFile(Transpiler $transpiler, string $filePath, array $fileContent);
+    /**
+     * actually processes a file
+     *
+     * @param Transpiler $transpiler transpiler instance
+     * @param string $filePath the file to generate (target file)
+     * @param array $fileContent the transpiled (first round from profile to docker compose)
+     * @param array $profile the raw profile array (what the user specified as profile)
+     *
+     * @return mixed
+     */
+    abstract function processFile(Transpiler $transpiler, string $filePath, array $fileContent, array $profile);
 
     public function addExposeServices() : bool {
         return true;
