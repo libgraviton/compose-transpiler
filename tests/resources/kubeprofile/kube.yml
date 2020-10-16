@@ -1,4 +1,5 @@
 components:
   kube1:
+    replicas: 2
   kube2-merge-into-kube1:
     mergeIntoComponentPod: kube1

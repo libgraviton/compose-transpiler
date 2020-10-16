@@ -309,6 +309,11 @@ class KubeKustomize extends OutputProcessorAbstract {
                         $innerService['volumes'][] = ['serviceName' => $name, 'name' => $innerVolume];
                     }
                 }
+
+                // is there a replica property defined in the profile?
+                if (isset($profile['components'][$name]['replicas'])) {
+                    $innerService['replicas'] = $profile['components'][$name]['replicas'];
+                }
             }
 
             // do we need to merge containers together as pods? drop those that are merged..

@@ -7,7 +7,7 @@ metadata:
 spec:
   selector:
     run: kube1
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       labels:
@@ -41,6 +41,11 @@ spec:
           ports:
             -
               containerPort: 9000
+              hostPort: 9000
+          volumeMounts:
+            -
+              name: kube1-data
+              mountPath: /data
         -
           name: kube2-merge-into-kube1
           image: 'real.repository/kube2:v1.0'
@@ -60,9 +65,24 @@ spec:
                   key: SOME_SECRET_ENV_KUBE2
           ports:
             -
-              containerPort: 5555
+              containerPort: 9000
+              hostPort: 9001
             -
               containerPort: 8000
+              hostPort: 8000
+          volumeMounts:
+            -
+              name: kube2-merge-into-kube1-data
+              mountPath: /data
+      volumes:
+        -
+          name: kube1-data
+          persistentVolumeClaim:
+            claimName: kube1-data-claim
+        -
+          name: kube2-merge-into-kube1-data
+          persistentVolumeClaim:
+            claimName: kube2-merge-into-kube1-data-claim
 
 ---
 apiVersion: v1
@@ -81,10 +101,34 @@ spec:
       protocol: TCP
       name: kube19000
     -
-      port: 5555
-      targetPort: 5555
+      port: 9001
+      targetPort: 9001
       protocol: TCP
-      name: kube15555
+      name: kube19001
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube1-data-claim
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube2-merge-into-kube1-data-claim
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
 
 ---
 apiVersion: route.openshift.io/v1

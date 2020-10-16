@@ -12,8 +12,15 @@ spec:
     run: {{ serviceName }}
   ports:
 {% for port in service._servicePorts %}
+{% if port is iterable %}
+    - port: {{ port.hostPort }}
+      targetPort: {{ port.hostPort }}
+      protocol: TCP
+      name: {{ serviceName }}{{ port.hostPort }}
+{% else %}
     - port: {{ port }}
       targetPort: {{ port }}
       protocol: TCP
       name: {{ serviceName }}{{ port }}
+{% endif %}
 {% endfor %}

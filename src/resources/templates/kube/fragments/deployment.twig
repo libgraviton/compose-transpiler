@@ -21,7 +21,7 @@ spec:
     matchLabels:
       run: {{ serviceName }}
 {% endif %}
-  replicas: 1
+  replicas: {{ service.replicas|default('1') }}
   template:
     metadata:
       labels:
@@ -60,7 +60,13 @@ spec:
 {% if not declaredPorts is empty %}
           ports:
 {% for port in declaredPorts %}
+{% if port is iterable %}
+            - containerPort: {{ port.containerPort }}
+              hostPort: {{ port.hostPort }}
+{% else %}
             - containerPort: {{ port }}
+              hostPort: {{ port }}
+{% endif %}
 {% endfor %}
 {% endif %}
 
