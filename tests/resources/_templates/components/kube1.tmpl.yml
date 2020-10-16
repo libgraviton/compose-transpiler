@@ -9,6 +9,8 @@ _secretEnvs:
 _exposes:
     - name: kube1
       port: 80
+_volumes:
+  - /data
 
 environment:
   SOME_ENV: '${SOME_ENV_VALUE:-default}'

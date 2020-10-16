@@ -25,7 +25,8 @@ class KubeKustomize extends OutputProcessorAbstract {
 
     // these fields in the *twig base template* are global to the service (meaning deployment in K8 terms), not the container
     private $serviceMetaFields = [
-        '_servicePorts'
+        '_servicePorts',
+        'volumes'
     ];
 
     function processFile(Transpiler $transpiler, string $filePath, array $fileContent, array $profile) {
@@ -297,9 +298,17 @@ class KubeKustomize extends OutputProcessorAbstract {
     private function structureAlterations(array $structure, array $profile) {
 
         if (isset($structure['services'])) {
-            // first, that we have a 'containers' array under each service
+            // first, duplicate stuff into global that are containers for the global level
+            // **** STUFF IN CONTAINERS THAT NEED TO GO OUTSIDE OF THAT SCOPE HAS BE COPIED HERE!
             foreach ($structure['services'] as $name => &$innerService) {
                 $innerService['containers'] = [array_merge($innerService, ['name' => $name])];
+
+                $innerService['volumes'] = [];
+                if (isset($innerService['_volumes'])) {
+                    foreach ($innerService['_volumes'] as $innerVolume) {
+                        $innerService['volumes'][] = ['serviceName' => $name, 'name' => $innerVolume];
+                    }
+                }
             }
 
             // do we need to merge containers together as pods? drop those that are merged..

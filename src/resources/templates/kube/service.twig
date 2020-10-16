@@ -29,8 +29,8 @@
 {% endif %}
 
 {# type pvc #}
-{% if service._volumes %}
-{% for volume in service._volumes %}
+{% if not service.volumes is empty %}
+{% for volume in service.volumes %}
   {{- include('kube/fragments/volume.twig') }}
 {% endfor %}
 {% endif %}

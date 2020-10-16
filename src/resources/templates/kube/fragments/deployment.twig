@@ -67,11 +67,12 @@ spec:
 {% if service._volumes %}
           volumeMounts:
 {% for volume in service._volumes %}
-            - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
+            - name: {{ service.name }}{{ macros.volumePathToName(volume) }}
               mountPath: {{ volume }}
-{% endfor %}
 
-{% set volumeList = volumeList|merge(service._volumes) %}
+    {# add to volume list #}
+    {% set volumeList = volumeList|merge([{'serviceName': service.name, 'path': volume}]) %}
+{% endfor %}
 
 {% endif %}
 
@@ -82,8 +83,8 @@ spec:
 {% if not volumeList is empty %}
       volumes:
 {% for volume in volumeList %}
-        - name: {{ serviceName }}{{ macros.volumePathToName(volume) }}
+        - name: {{ volume.serviceName }}{{ macros.volumePathToName(volume.path) }}
           persistentVolumeClaim:
-            claimName: {{ serviceName }}{{ macros.volumePathToName(volume) }}-claim
+            claimName: {{ volume.serviceName }}{{ macros.volumePathToName(volume.path) }}-claim
 {% endfor %}
 {% endif %}

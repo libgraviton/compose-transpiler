@@ -10,6 +10,8 @@ _containerPorts:
 # for the cluster service
 _servicePorts:
   - 5555
+_volumes:
+  - /data
 
 environment:
   SOME_ENV: '${SOME_ENV_VALUE_KUBE2:-default-kube2}'

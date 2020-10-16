@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ serviceName }}{{ macros.volumePathToName(volume) }}-claim
+  name: {{ volume.serviceName }}{{ macros.volumePathToName(volume.name) }}-claim
 spec:
   resources:
     requests:
