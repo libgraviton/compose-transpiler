@@ -7,6 +7,21 @@ metadata:
 spec:
   selector:
     run: kube1
+  strategy:
+    type: Recreate
+  triggers:
+    -
+      type: ImageChange
+      imageChangeParams:
+        automatic: false
+        containerNames:
+          - kube1
+          - kube2-merge-into-kube1
+        from:
+          kind: ImageStreamTag
+          name: 'kube1:v3.30.0'
+    -
+      type: ConfigChange
   replicas: 2
   revisionHistoryLimit: 3
   template:
@@ -80,6 +95,26 @@ spec:
           name: kube2-merge-into-kube1-data
           persistentVolumeClaim:
             claimName: kube2-merge-into-kube1-data-claim
+
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: kube1
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    -
+      name: v3.30.0
+      from:
+        kind: DockerImage
+        name: 'change.this.repository/kube1:v3.30.0'
+    -
+      name: v1.0
+      from:
+        kind: DockerImage
+        name: 'change.this.repository/kube2:v1.0'
 
 ---
 apiVersion: v1
