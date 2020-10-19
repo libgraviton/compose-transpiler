@@ -13,7 +13,7 @@ spec:
     -
       type: ImageChange
       imageChangeParams:
-        automatic: false
+        automatic: true
         containerNames:
           - kube1
           - kube2-merge-into-kube1
@@ -109,12 +109,12 @@ spec:
       name: v3.30.0
       from:
         kind: DockerImage
-        name: 'change.this.repository/kube1:v3.30.0'
+        name: 'real.repository/kube1:v3.30.0'
     -
       name: v1.0
       from:
         kind: DockerImage
-        name: 'change.this.repository/kube2:v1.0'
+        name: 'real.repository/kube2:v1.0'
 
 ---
 apiVersion: v1
