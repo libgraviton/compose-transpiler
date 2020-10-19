@@ -18,6 +18,11 @@
   {{- include('kube/fragments/deployment.twig') }}
 {% endif %}
 
+{# optional imagestream #}
+{% if writeImageStreams %}
+  {{- include('kube/fragments/imagestream.twig') }}
+{% endif %}
+
 {# type job #}
 {% if type == "job" %}
   {{- include('kube/fragments/job.twig') }}

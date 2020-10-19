@@ -17,6 +17,26 @@ spec:
   selector:
 {% if dialect == "openshift" %}
     run: {{ serviceName }}
+
+    {%~ if writeImageStreams %}
+  strategy:
+    type: Recreate
+  triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: {{ imagestreamsAutomatic|default('false')|ensureBoolean }}
+        containerNames:
+        {%~ for service in service.containers %}
+          - {{ service.name }}
+            {%~ set lastServiceName = service.name %}
+            {%~ set lastServiceImage = service.image %}
+        {%~ endfor %}
+        from:
+          kind: ImageStreamTag
+          name: {{ serviceName }}:{{ macros.getLabelFromImageUrl(service.image) }}
+    - type: ConfigChange
+    {% endif %}
+
 {% else %}
     matchLabels:
       run: {{ serviceName }}

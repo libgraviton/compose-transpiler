@@ -1,0 +1,17 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: {{ serviceName }}
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+{% for service in service.containers %}
+    - name: {{ macros.getLabelFromImageUrl(service.image) }}
+      from:
+        kind: DockerImage
+        name: '{{ service.image }}'
+{% endfor %}

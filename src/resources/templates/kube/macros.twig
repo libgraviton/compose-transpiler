@@ -21,3 +21,5 @@
 {% endmacro %}
 
 {% macro command(command) %}{% if command is iterable %}{{ command|yaml_encode(inline = 0)|raw }}{% else %}["{{ command|join("\",\"")|replace({"\n": " ", "\"": "\\\""})|raw }}"]{% endif %}{% endmacro %}
+
+{% macro getLabelFromImageUrl(imageUrl) %}{% set parts = imageUrl|split(':') %}{{ parts[1] }}{% endmacro %}
