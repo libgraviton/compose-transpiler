@@ -156,7 +156,7 @@ class KubeKustomize extends OutputProcessorAbstract {
         }
 
         // any replacers in the image name?
-        if ($currentKey == 'image') {
+        if ($currentKey == 'image' || $currentKey == 'name') {
             if (isset($this->outputOptions['imageNameReplaces'])) {
                 foreach ($this->outputOptions['imageNameReplaces'] as $replace) {
                     $currentValue = str_replace(
