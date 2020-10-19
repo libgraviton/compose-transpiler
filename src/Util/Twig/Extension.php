@@ -22,13 +22,15 @@ class Extension extends AbstractExtension
         return [
             new TwigFilter('yamlEnv', [$this, 'yamlEnv']),
             new TwigFilter('yamlEnc', [$this, 'yamlEnc']),
+            new TwigFilter('ensureBoolean', [$this, 'ensureBoolean'])
         ];
     }
 
     public function getFunctions()
     {
         return [
-            new TwigFunction('strRepeat', 'str_repeat')
+            new TwigFunction('strRepeat', 'str_repeat'),
+            new TwigFunction('ensureBoolean', [$this, 'ensureBoolean'])
         ];
     }
 
@@ -51,5 +53,18 @@ class Extension extends AbstractExtension
         $dumper = new Dumper(2);
         $yml = $dumper->dump($structure, 500);
         return $yml;
+    }
+
+    public function ensureBoolean($value) {
+        if (is_bool($value) && $value == true) {
+            return 'true';
+        }
+        if (is_bool($value) && $value == false) {
+            return 'false';
+        }
+        if ($value == '1' || $value == 'true') {
+            return 'true';
+        }
+        return 'false';
     }
 }
