@@ -92,7 +92,7 @@ spec:
           volumeMounts:
 {% for volume in service._volumes %}
             - name: {{ service.name }}{{ macros.volumePathToName(volume) }}
-              mountPath: {{ volume }}
+              mountPath: {{ macros.getPathFromVolume(volume) }}
 
     {# add to volume list #}
     {% set volumeList = volumeList|merge([{'serviceName': service.name, 'path': volume}]) %}

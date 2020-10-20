@@ -1,4 +1,3 @@
-{% macro volumePathToName(name) %}{{ name|replace({'/': '-'}) }}{% endmacro %}
 
 {% macro envList(envList, _secretEnvs, indent = 8) %}
 {{ strRepeat(" ", indent) }}env:
@@ -23,3 +22,9 @@
 {% macro command(command) %}{% if command is iterable %}{{ command|yaml_encode(inline = 0)|raw }}{% else %}["{{ command|join("\",\"")|replace({"\n": " ", "\"": "\\\""})|raw }}"]{% endif %}{% endmacro %}
 
 {% macro getLabelFromImageUrl(imageUrl) %}{% set parts = imageUrl|split(':') %}{{ parts[1] }}{% endmacro %}
+
+{% macro volumePathToName(name) %}{{ _self.getPathFromVolume(name)|replace({'/': '-'}) }}{% endmacro %}
+
+{% macro getPathFromVolume(volumeName) %}{% set parts = volumeName|split(':') %}{{ parts[0] }}{% endmacro %}
+
+{% macro getSizeFromVolume(volumeName) %}{% set parts = volumeName|split(':') %}{{ parts[1]|default('5Gi') }}{% endmacro %}

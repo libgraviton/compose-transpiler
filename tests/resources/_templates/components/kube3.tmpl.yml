@@ -1,0 +1,5 @@
+image: change.this.repository/kube3:${TAG}
+
+# for k8s
+_volumes:
+  - /data:50Gi

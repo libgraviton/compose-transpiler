@@ -188,3 +188,74 @@ status:
           type: Admitted
       routerName: router
       wildcardPolicy: None
+
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: kube3
+spec:
+  selector:
+    run: kube3
+  strategy:
+    type: Recreate
+  triggers:
+    -
+      type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - kube3
+        from:
+          kind: ImageStreamTag
+          name: 'kube3:latest'
+    -
+      type: ConfigChange
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        run: kube3
+    spec:
+      containers:
+        -
+          name: kube3
+          image: 'real.repository/kube3:latest'
+          imagePullPolicy: Always
+          volumeMounts:
+            -
+              name: kube3-data
+              mountPath: /data
+      volumes:
+        -
+          name: kube3-data
+          persistentVolumeClaim:
+            claimName: kube3-data-claim
+
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: kube3
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    -
+      name: latest
+      from:
+        kind: DockerImage
+        name: 'real.repository/kube3:latest'
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube3-data-claim
+spec:
+  resources:
+    requests:
+      storage: 50Gi
+  accessModes:
+    - ReadWriteOnce

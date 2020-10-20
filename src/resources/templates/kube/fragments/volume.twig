@@ -8,6 +8,6 @@ metadata:
 spec:
   resources:
     requests:
-      storage: 5Gi
+      storage: {{ macros.getSizeFromVolume(volume.name) }}
   accessModes:
     - ReadWriteOnce
