@@ -29,6 +29,16 @@ class ComposeOnShell extends OutputProcessorAbstract {
         $fileContent = YamlUtils::cleanupYamlArray($fileContent);
         $content = YamlUtils::dump($fileContent);
 
+        /**
+         * workaround an attribute of the symfony yaml parser as octal as '0400' will be changed to decimal -
+         * this has been addressed in https://github.com/symfony/symfony/issues/34807
+         * but doesn't work for us as we need 0400 rendered as a number (no quoting in yaml) and 0o syntax is not
+         * supported in compose i guess
+         */
+        if (strpos($content, 'mode') !== false) {
+            $content = preg_replace("/mode: '([0-9]+)'/", 'mode: ${1}', $content);
+        }
+
         // do we need to generate env file?
         $this->generateEnvFile($filePath, $content);
         $this->logger->info('Wrote file "' . $this->envFileName . '"');
