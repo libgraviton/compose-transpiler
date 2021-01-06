@@ -2,3 +2,6 @@ components:
   kube1:
     expose:
       doExpose: true
+    mixins:
+      octal-number:
+        mode: '0400'

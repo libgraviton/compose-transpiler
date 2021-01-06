@@ -7,6 +7,16 @@ services:
       SOME_ENV_COMPOSED: 'thisis${SOME_ENV_COMPOSED_VALUE:-default_composed}composed'
       SOME_SECRET_ENV: '${SOME_SECRET_ENV_VALUE:-default_secret}'
       SOME_SECRET_ENV_COMPOSED: 'thisisalso${SOME_SECRET_ENV_COMPOSED_VALUE:-default_secret_composed}composed'
+    secrets:
+      -
+        source: test
+        mode: 0400
+      -
+        source: test2
+        mode: 6666
+      -
+        source: test3
+        mode: 077777
   kube1-expose:
     image: 'nginx:latest'
 networks:

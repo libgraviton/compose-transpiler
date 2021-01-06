@@ -126,9 +126,10 @@ class TranspilerTest extends TestCase {
 
         $sut->transpile();
 
-        $this->assertEqualsCanonicalizing(
-            Yaml::parseFile(__DIR__.'/resources/expected/composeprofile/compose.yml'),
-            Yaml::parseFile(__DIR__.'/generated/compose.yml')
+        // here we compare the files directly as the octal numbers are messed up by the yaml parser
+        $this->assertFileEquals(
+            __DIR__.'/resources/expected/composeprofile/compose.yml',
+            __DIR__.'/generated/compose.yml'
         );
 
         $this->assertEqualsCanonicalizing(

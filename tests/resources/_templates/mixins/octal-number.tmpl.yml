@@ -1,0 +1,10 @@
+secrets:
+  -
+    source: test
+    mode: '{{ mode }}'
+  -
+    source: test2
+    mode: '6666'
+  -
+    source: test3
+    mode: '077777'
