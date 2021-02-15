@@ -18,4 +18,4 @@ spec:
       - path: /
         backend:
           serviceName: {{ serviceName }}
-          servicePort: {{ serviceName }}{{ expose.port }}
+          servicePort: {{ serviceName|slice(0, 2) }}{{ expose.port }}

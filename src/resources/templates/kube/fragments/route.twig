@@ -8,7 +8,7 @@ metadata:
 spec:
   host: '{{ expose.name }}${DOMAIN}'
   port:
-    targetPort: {{ serviceName }}{{ expose.port }}
+    targetPort: {{ serviceName|slice(0, 2) }}{{ expose.port }}
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect

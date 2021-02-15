@@ -21,6 +21,6 @@ spec:
     - port: {{ port }}
       targetPort: {{ port }}
       protocol: TCP
-      name: {{ serviceName }}{{ port }}
+      name: {{ serviceName|slice(0, 2) }}{{ port }}
 {% endif %}
 {% endfor %}

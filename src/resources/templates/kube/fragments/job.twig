@@ -12,6 +12,10 @@ spec:
 {% endif %}
   template:
     spec:
+{% if pullSecretName %}
+      imagePullSecrets:
+        - name: {{ pullSecretName }}
+{% endif %}
       containers:
       - name: {{ serviceName }}
         image: {{ service.image }}
