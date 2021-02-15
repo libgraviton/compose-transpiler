@@ -31,6 +31,10 @@ class VersionTagReplacer extends ReplacerAbstract
             }
 
             foreach (file($this->releaseFile) as $release) {
+                if (substr(trim($release), 0, 1) == '#') {
+                    continue;
+                }
+
                 $releaseParts = explode(":", trim($release));
 
                 $pattern = '@('.preg_quote($releaseParts[0]).')\:(\$\{TAG\})@imU';

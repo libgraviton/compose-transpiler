@@ -46,7 +46,11 @@ class KubeKustomize extends OutputProcessorAbstract {
         $kubeYaml = $this->utils->renderTwigTemplate('kube.twig', $twigVars);
 
         // transform secret/env refs
-        $parts = YamlUtils::multiParse($kubeYaml);
+        try {
+            $parts = YamlUtils::multiParse($kubeYaml);
+        } catch (\Exception $e) {
+            throw new \Exception('Error in parsind: '.var_export($kubeYaml, true));
+        }
         $transformed = [];
 
         $callable = \Closure::fromCallable([$this, 'traverseArray']);

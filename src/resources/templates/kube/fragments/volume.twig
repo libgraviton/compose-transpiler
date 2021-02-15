@@ -9,5 +9,8 @@ spec:
   resources:
     requests:
       storage: {{ macros.getSizeFromVolume(volume.name) }}
+{% if storageClassName %}
+  storageClassName: {{ storageClassName }}
+{% endif %}
   accessModes:
     - ReadWriteOnce

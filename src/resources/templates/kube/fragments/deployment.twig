@@ -50,6 +50,19 @@ spec:
       labels:
         run: {{ serviceName }}
     spec:
+{% if pullSecretName %}
+      imagePullSecrets:
+        - name: {{ pullSecretName }}
+{% endif %}
+
+{% if runDeploymentAsUser %}
+      securityContext:
+        runAsUser: {{ runDeploymentAsUser }}
+{% if not runDeploymentAsGroup is null %}
+        fsGroup: {{ runDeploymentAsGroup }}
+{% endif %}
+{% endif %}
+
       containers:
 
 {% for service in service.containers %}
