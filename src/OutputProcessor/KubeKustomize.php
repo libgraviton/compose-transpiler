@@ -100,12 +100,28 @@ class KubeKustomize extends OutputProcessorAbstract {
 
                 $template = $patch['template'];
                 unset($patch['template']);
+
+                $templateParams = [];
+                if (isset($patch['templateParams'])) {
+                    $templateParams = $patch['templateParams'];
+                    unset($patch['templateParams']);
+                }
+
                 $this->jsonPatches[] = $patch;
+
+                $output = $this->utils->renderTwigTemplate($template, $templateParams);
+
+                // pretty print..
+                $output = json_encode(
+                    json_decode($output),
+                    JSON_PRETTY_PRINT+JSON_UNESCAPED_SLASHES
+                );
+
 
                 // render template
                 $this->utils->writeOutputFile(
                     $patch['path'],
-                    $this->utils->renderTwigTemplate($template, [])
+                    $output
                 );
                 $this->logger->info('Wrote file "'.$template.'"');
             }

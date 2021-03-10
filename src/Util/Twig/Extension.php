@@ -22,6 +22,7 @@ class Extension extends AbstractExtension
         return [
             new TwigFilter('yamlEnv', [$this, 'yamlEnv']),
             new TwigFilter('yamlEnc', [$this, 'yamlEnc']),
+            new TwigFilter('jsonEnc', [$this, 'jsonEnc']),
             new TwigFilter('ensureBoolean', [$this, 'ensureBoolean'])
         ];
     }
@@ -53,6 +54,11 @@ class Extension extends AbstractExtension
         $dumper = new Dumper(2);
         $yml = $dumper->dump($structure, 500);
         return $yml;
+    }
+
+    public function jsonEnc($structure)
+    {
+        return json_encode($structure);
     }
 
     public function ensureBoolean($value) {
