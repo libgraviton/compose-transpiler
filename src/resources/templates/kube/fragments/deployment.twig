@@ -101,6 +101,28 @@ spec:
 {% endfor %}
 {% endif %}
 
+{% if (service._memoryLimit or service._cpuLimit or service._memoryReservation or service._cpuReservation) %}
+          resources:
+{% endif %}
+{% if (service._memoryLimit or service._cpuLimit) %}
+            limits:
+    {%~ if service._memoryLimit %}
+              memory: "{{ service._memoryLimit }}"
+    {%~ endif %}
+    {%~ if service._cpuLimit %}
+              cpu: "{{ service._cpuLimit }}"
+    {%~ endif %}
+{% endif %}
+{% if (service._memoryReservation or service._cpuReservation) %}
+            requests:
+    {%~ if service._memoryReservation %}
+              memory: "{{ service._memoryReservation }}"
+    {%~ endif %}
+    {%~ if service._cpuReservation %}
+              cpu: "{{ service._cpuReservation }}"
+    {%~ endif %}
+{% endif %}
+
 {% if service._volumes %}
           volumeMounts:
 {% for volume in service._volumes %}

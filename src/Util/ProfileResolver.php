@@ -45,7 +45,11 @@ class ProfileResolver {
                 );
             }
 
-            $parentYml = $this->resolveInheritance($parentFile, $yml);
+            try {
+                $parentYml = $this->resolveInheritance($parentFile, $yml);
+            } catch (\Exception $e) {
+                throw new \RuntimeException('Could not resolve parent in '.$filename.' (' . $parentFile . ')', 0, $e);
+            }
 
             if (isset($yml['_inheritance']['unsets']) && is_array($yml['_inheritance']['unsets'])) {
                 foreach ($yml['_inheritance']['unsets'] as $unsetter) {
