@@ -163,8 +163,6 @@ class TranspilerTest extends TestCase {
         // kube.yml and kube2.yml should be identical, same as expected one..
         $expectedKubeYaml = YamlUtils::multiParse(__DIR__.'/resources/expected/kubeconfig/kube.yml');
 
-        //$parsed = YamlUtils::multiParse(__DIR__.'/generated/kube.yml');
-
         // kube.yml should be as expected
         $this->assertEqualsCanonicalizing(
             $expectedKubeYaml,
@@ -191,7 +189,7 @@ class TranspilerTest extends TestCase {
             __DIR__.'/resources/_templates/kustomize_configs/type2.yaml',
             __DIR__.'/generated/kustomize_configs/type2.yaml',
         );
-        $this->assertFileEquals(
+        $this->assertJsonFileEqualsJsonFile(
             __DIR__.'/resources/_templates/kustomize_patches/added-env.json',
             __DIR__ . '/generated/patches/added-env-patch.json',
         );

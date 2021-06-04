@@ -1,27 +1,13 @@
 
 ---
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: kube1
 spec:
   selector:
-    run: kube1
-  strategy:
-    type: Recreate
-  triggers:
-    -
-      type: ImageChange
-      imageChangeParams:
-        automatic: true
-        containerNames:
-          - kube1
-          - kube2-merge-into-kube1
-        from:
-          kind: ImageStreamTag
-          name: 'kube1:v3.30.0'
-    -
-      type: ConfigChange
+    matchLabels:
+      run: kube1
   replicas: 2
   revisionHistoryLimit: 3
   template:
@@ -131,7 +117,7 @@ spec:
       port: 9000
       targetPort: 9000
       protocol: TCP
-      name: kube19000
+      name: ku9000
     -
       port: 9001
       targetPort: 9001
@@ -170,7 +156,7 @@ metadata:
 spec:
   host: kube1$(DOMAIN)
   port:
-    targetPort: kube180
+    targetPort: ku80
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
@@ -190,27 +176,14 @@ status:
       wildcardPolicy: None
 
 ---
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: kube3
 spec:
   selector:
-    run: kube3
-  strategy:
-    type: Recreate
-  triggers:
-    -
-      type: ImageChange
-      imageChangeParams:
-        automatic: true
-        containerNames:
-          - kube3
-        from:
-          kind: ImageStreamTag
-          name: 'kube3:latest'
-    -
-      type: ConfigChange
+    matchLabels:
+      run: kube3
   replicas: 1
   revisionHistoryLimit: 3
   template:
