@@ -122,7 +122,7 @@ spec:
       port: 9001
       targetPort: 9001
       protocol: TCP
-      name: kube19001
+      name: ku9001
 
 ---
 apiVersion: v1

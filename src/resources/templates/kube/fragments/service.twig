@@ -16,7 +16,7 @@ spec:
     - port: {{ port.hostPort }}
       targetPort: {{ port.hostPort }}
       protocol: TCP
-      name: {{ serviceName }}{{ port.hostPort }}
+      name: {{ serviceName|slice(0, 2) }}{{ port.hostPort }}
 {% else %}
     - port: {{ port }}
       targetPort: {{ port }}
