@@ -15,7 +15,7 @@ spec:
 {% if port is iterable %}
     - port: {{ port.hostPort }}
       targetPort: {{ port.hostPort }}
-      protocol: TCP
+      protocol: {{ port.protocol|default('TCP') }}
       name: {{ serviceName|slice(0, 2) }}{{ port.hostPort }}
 {% else %}
     - port: {{ port }}

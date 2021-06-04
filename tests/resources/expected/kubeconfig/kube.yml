@@ -67,6 +67,8 @@ spec:
             -
               containerPort: 9000
             -
+              containerPort: 9001
+            -
               containerPort: 8000
           volumeMounts:
             -
@@ -123,6 +125,11 @@ spec:
       targetPort: 9001
       protocol: TCP
       name: ku9001
+    -
+      port: 9002
+      targetPort: 9002
+      protocol: UDP
+      name: ku9002
 
 ---
 apiVersion: v1

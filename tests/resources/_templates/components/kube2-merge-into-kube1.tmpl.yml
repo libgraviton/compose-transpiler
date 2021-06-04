@@ -11,6 +11,9 @@ _containerPorts:
 _servicePorts:
   - containerPort: 9000
     hostPort: 9001
+  - containerPort: 9001
+    hostPort: 9002
+    protocol: UDP
 _volumes:
   - /data
 
