@@ -26,6 +26,7 @@ class KubeKustomize extends OutputProcessorAbstract {
     // these fields in the *twig base template* are global to the service (meaning deployment in K8 terms), not the container
     private $serviceMetaFields = [
         '_servicePorts',
+        '_exposes',
         'volumes'
     ];
 
@@ -359,6 +360,9 @@ class KubeKustomize extends OutputProcessorAbstract {
                     foreach ($this->serviceMetaFields as $fieldName) {
                         if (!isset($service[$fieldName])) {
                             continue;
+                        }
+                        if (!isset($targetService[$fieldName])) {
+                            $targetService[$fieldName] = [];
                         }
                         $targetService[$fieldName] = array_merge($targetService[$fieldName], $service[$fieldName]);
                     }

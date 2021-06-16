@@ -183,6 +183,33 @@ status:
       wildcardPolicy: None
 
 ---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kube19001
+spec:
+  host: kube2$(DOMAIN)
+  port:
+    targetPort: ku9001
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: kube1
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+    -
+      conditions:
+        -
+          status: 'True'
+          type: Admitted
+      routerName: router
+      wildcardPolicy: None
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

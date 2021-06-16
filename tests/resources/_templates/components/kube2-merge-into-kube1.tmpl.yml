@@ -7,6 +7,11 @@ _secretEnvs:
 # internal only
 _containerPorts:
   - 8000
+
+_exposes:
+  - name: kube2
+    port: 9001
+
 # for the cluster service
 _servicePorts:
   - containerPort: 9000
