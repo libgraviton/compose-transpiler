@@ -12,6 +12,21 @@ _exposes:
 _volumes:
   - /data
 
+_probes:
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: liveness-port
+    failureThreshold: 1
+    periodSeconds: 10
+  readinessProbe:
+    exec:
+      command:
+        - cat
+        - /tmp/healthy
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
 environment:
   SOME_ENV: '${SOME_ENV_VALUE:-default}'
   SOME_ENV_COMPOSED: 'thisis${SOME_ENV_COMPOSED_VALUE:-default_composed}composed'
