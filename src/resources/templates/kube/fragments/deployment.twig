@@ -72,6 +72,10 @@ spec:
 {% endfor %}
 {% endif %}
 
+{% if service._probes is defined %}
+{{ service._probes|yamlEnc(10) }}
+{% endif %}
+
 {% if (service._memoryLimit or service._cpuLimit or service._memoryReservation or service._cpuReservation) %}
           resources:
 {% endif %}
