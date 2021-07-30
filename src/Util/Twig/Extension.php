@@ -49,10 +49,10 @@ class Extension extends AbstractExtension
         return $yml;
     }
 
-    public function yamlEnc($structure)
+    public function yamlEnc($structure, $indent = 2)
     {
         $dumper = new Dumper(2);
-        $yml = $dumper->dump($structure, 500);
+        $yml = $dumper->dump($structure, 500, $indent);
         return $yml;
     }
 
