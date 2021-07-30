@@ -51,7 +51,7 @@ class KubeKustomize extends OutputProcessorAbstract {
         try {
             $parts = YamlUtils::multiParse($kubeYaml);
         } catch (\Exception $e) {
-            throw new \Exception('Error in parsind: '.var_export($kubeYaml, true));
+            throw new \Exception('Error parsing: '.var_export($kubeYaml, true));
         }
         $transformed = [];
 
