@@ -13,9 +13,17 @@ spec:
     matchLabels:
       run: {{ serviceName }}
   replicas: {{ service.replicas|default('1') }}
-{% if deploymentConfigHistoryLimit %}
-  revisionHistoryLimit: {{ deploymentConfigHistoryLimit }}
+{% set revisionLimit = service._revisionHistoryLimit|default(deploymentConfigHistoryLimit)|default(null) %}
+{% if revisionLimit != null %}
+  revisionHistoryLimit: {{ revisionLimit }}
 {% endif %}
+
+{% set deploymentStrategyName = service._deploymentStrategy|default(deploymentStrategy)|default(null) %}
+{% if deploymentStrategyName != null %}
+  strategy:
+    type: {{ deploymentStrategyName }}
+{% endif %}
+
   template:
     metadata:
       labels:

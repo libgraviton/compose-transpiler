@@ -11,6 +11,8 @@ _exposes:
       port: 80
 _volumes:
   - /data
+_revisionHistoryLimit: 1
+_deploymentStrategy: Recreate
 
 _probes:
   livenessProbe:

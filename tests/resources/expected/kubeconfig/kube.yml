@@ -9,7 +9,9 @@ spec:
     matchLabels:
       run: kube1
   replicas: 2
-  revisionHistoryLimit: 3
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
