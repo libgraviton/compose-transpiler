@@ -1,0 +1,9 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ name }}
+spec:
+  template:
+    metadata:
+      labels:
+        added-by: yaml-merge

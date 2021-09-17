@@ -21,6 +21,7 @@ class KubeKustomize extends OutputProcessorAbstract {
 
     // stuff that goes into kustomization.yaml
     private $jsonPatches = [];
+    private $yamlPatches = [];
     private $configurations = [];
 
     // these fields in the *twig base template* are global to the service (meaning deployment in K8 terms), not the container
@@ -128,6 +129,38 @@ class KubeKustomize extends OutputProcessorAbstract {
                 $this->logger->info('Wrote file "'.$template.'"');
             }
         }
+
+        // any strategic merges?
+        if (isset($this->outputOptions['patchesStrategicMerge'])) {
+            foreach ($this->outputOptions['patchesStrategicMerge'] as $patch) {
+                if (!isset($patch['template'])) {
+                    $this->logger->warning('Patch element has no "template" set, skipping');
+                    continue;
+                }
+
+                $template = $patch['template'];
+                unset($patch['template']);
+
+                $templateParams = [];
+                if (isset($patch['templateParams'])) {
+                    $templateParams = $patch['templateParams'];
+                    unset($patch['templateParams']);
+                }
+
+                $this->yamlPatches[] = $patch['path'];
+
+                $output = $this->utils->renderTwigTemplate($template, $templateParams);
+
+                // render template
+                $this->utils->writeOutputFile(
+                    $patch['path'],
+                    $output
+                );
+                $this->logger->info('Wrote file "'.$template.'"');
+            }
+        }
+
+
         // any kustomize configurations?
         if (isset($this->outputOptions['configurations'])) {
             foreach ($this->outputOptions['configurations'] as $configuration) {
@@ -267,6 +300,11 @@ class KubeKustomize extends OutputProcessorAbstract {
         // patches?
         if (!empty($this->jsonPatches)) {
             $yaml['patchesJson6902'] = $this->jsonPatches;
+        }
+
+        // yaml patches?
+        if (!empty($this->yamlPatches)) {
+            $yaml['patchesStrategicMerge'] = $this->yamlPatches;
         }
 
         // configurations?

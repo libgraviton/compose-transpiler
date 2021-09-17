@@ -20,3 +20,9 @@ outputProcessor:
           kind: DeploymentConfig
           name: mongodb
         path: patches/added-env-patch.json
+
+    patchesStrategicMerge:
+      - template: kustomize_patches/strategic-merge.yaml
+        path: patches/strategic-merge.yaml
+        templateParams:
+          name: kube1 # add label to kube1 deployment
