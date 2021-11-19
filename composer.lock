@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "27070a6403ef69d9edfa3b42879b1a12",
+    "content-hash": "1753f1c4618c518b4f51221bfdec495f",
     "packages": [
         {
             "name": "ckr/arraymerger",
@@ -3660,7 +3660,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "~7.4.0"
+        "php": "~7.4|~8"
     },
     "platform-dev": [],
     "plugin-api-version": "2.1.0"
