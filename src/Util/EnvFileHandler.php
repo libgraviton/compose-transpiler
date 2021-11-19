@@ -91,6 +91,10 @@ class EnvFileHandler
             }
         }
 
+        if (!is_array($values)) {
+            $values = [];
+        }
+
         return $values;
     }
 
