@@ -166,12 +166,14 @@ class TranspilerTest extends TestCase {
         // kube.yml should be as expected
         $this->assertEqualsCanonicalizing(
             $expectedKubeYaml,
-            YamlUtils::multiParse(__DIR__.'/generated/kube.yml')
+            YamlUtils::multiParse(__DIR__.'/generated/kube.yml'),
+            'diff between '.__DIR__.'/resources/expected/kubeconfig/kube.yml'.' and '.__DIR__.'/generated/kube.yml'
         );
         // kube2.yml should be identical
         $this->assertEqualsCanonicalizing(
             $expectedKubeYaml,
-            YamlUtils::multiParse(__DIR__.'/generated/kube2.yml')
+            YamlUtils::multiParse(__DIR__.'/generated/kube2.yml'),
+            'diff between '.__DIR__.'/resources/expected/kubeconfig/kube.yml'.' and '.__DIR__.'/generated/kube2.yml'
         );
 
         // see kustomization.yaml is as expected
@@ -194,7 +196,7 @@ class TranspilerTest extends TestCase {
             __DIR__ . '/generated/patches/added-env-patch.json',
         );
 
-        (new Filesystem())->remove(__DIR__.'/generated');
+        //(new Filesystem())->remove(__DIR__.'/generated');
     }
 
     public function testReplacerRawFile()

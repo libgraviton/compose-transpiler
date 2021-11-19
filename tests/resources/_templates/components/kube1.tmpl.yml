@@ -3,6 +3,9 @@ image: change.this.repository/kube1:${TAG}
 # for k8s
 _servicePorts:
   - 9000
+_serviceMonitors:
+  - port: 9000
+    interval: 20s
 _secretEnvs:
   - SOME_SECRET_ENV
   - SOME_SECRET_ENV_COMPOSED

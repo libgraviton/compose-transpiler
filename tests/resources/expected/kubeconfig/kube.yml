@@ -225,6 +225,24 @@ status:
       wildcardPolicy: None
 
 ---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: kube1-monitor
+  name: kube1-monitor
+spec:
+  endpoints:
+    -
+      interval: 20s
+      port: ku9000
+      scheme: http
+      path: /metrics
+  selector:
+    matchLabels:
+      run: kube1-svc
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -281,3 +299,26 @@ spec:
       storage: 50Gi
   accessModes:
     - ReadWriteOnce
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: kube3-monitor
+  name: kube3-monitor
+spec:
+  endpoints:
+    -
+      interval: 900s
+      port: ku8888
+      scheme: tcp
+      path: /customMetrics
+    -
+      interval: 800s
+      port: ku8889
+      scheme: http
+      path: /customMetrics2
+  selector:
+    matchLabels:
+      run: kube3-svc

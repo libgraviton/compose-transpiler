@@ -1,0 +1,20 @@
+{% import "kube/macros.twig" as macros %}
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: {{ serviceName }}-monitor
+  name: {{ serviceName }}-monitor
+spec:
+  endpoints:
+{% for monitor in service._serviceMonitors %}
+    - interval: {{ monitor.interval|default('30s') }}
+      port: {{ serviceName|slice(0, 2) }}{{ monitor.port }}
+      scheme: {{ monitor.scheme|default('http') }}
+      path: {{ monitor.path|default('/metrics') }}
+{% endfor %}
+  selector:
+    matchLabels:
+      run: {{ serviceName }}-svc
