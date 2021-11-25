@@ -28,6 +28,7 @@ class KubeKustomize extends OutputProcessorAbstract {
     private $serviceMetaFields = [
         '_servicePorts',
         '_secretEnvs',
+        '_serviceMonitors',
         '_exposes',
         'volumes'
     ];
