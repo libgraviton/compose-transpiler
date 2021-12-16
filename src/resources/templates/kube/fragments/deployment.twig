@@ -48,7 +48,7 @@ spec:
 
         - name: {{ service.name }}
           image: {{ service.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ imagePullPolicy|default('Always') }}
 {% if service.entrypoint %}
           command: {{ macros.command(service.entrypoint) }}
 {% endif %}
