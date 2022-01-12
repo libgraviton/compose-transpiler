@@ -4,3 +4,4 @@ components:
   kube2-merge-into-kube1:
     mergeIntoComponentPod: kube1
   kube3:
+  kube4:
