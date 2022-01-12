@@ -31,6 +31,10 @@ spec:
       labels:
 {{ defaultLabels | merge(addedLabels) | yamlEnc(8) }}
     spec:
+{% if service._affinity is defined %}
+      affinity:
+{{ service._affinity | yamlEnc(8) }}
+{% endif %}
 {% if pullSecretName %}
       imagePullSecrets:
         - name: {{ pullSecretName }}

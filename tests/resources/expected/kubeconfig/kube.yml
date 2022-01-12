@@ -306,6 +306,20 @@ spec:
         dude: franz
         fred: hans
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            -
+              weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    -
+                      key: security
+                      operator: In
+                      values:
+                        - S2
+                topologyKey: kubernetes.io/hostname
       containers:
         -
           name: kube4
