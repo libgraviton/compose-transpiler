@@ -55,7 +55,7 @@ class VersionTagReplacer extends ReplacerAbstract
      */
     public function replace($content)
     {
-        if (strpos($content, $this->checkString) === false) {
+        if (is_null($content) || strpos($content, $this->checkString) === false) {
             return $content;
         }
 
