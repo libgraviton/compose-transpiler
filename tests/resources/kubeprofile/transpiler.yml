@@ -3,7 +3,6 @@ outputProcessor:
   options:
     projectName: transpiler
     dialect: openshift
-    writeImageStreams: true
     imagestreamsAutomatic: true
     deploymentConfigHistoryLimit: 3
     imageNameReplaces:

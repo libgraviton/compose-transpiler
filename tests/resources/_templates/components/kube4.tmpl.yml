@@ -1,0 +1,6 @@
+image: change.this.repository/kube4:${TAG}
+
+# for k8s
+_addedLabels:
+  dude: franz
+  fred: hans

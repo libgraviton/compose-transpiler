@@ -26,8 +26,10 @@ spec:
 
   template:
     metadata:
+      {%~ set defaultLabels = {'run': serviceName} %}
+      {%~ set addedLabels = service._addedLabels|default({}) %}
       labels:
-        run: {{ serviceName }}
+{{ defaultLabels | merge(addedLabels) | yamlEnc(8) }}
     spec:
 {% if pullSecretName %}
       imagePullSecrets:

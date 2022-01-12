@@ -100,26 +100,6 @@ spec:
             claimName: kube2-merge-into-kube1-data-claim
 
 ---
-kind: ImageStream
-apiVersion: image.openshift.io/v1
-metadata:
-  name: kube1
-spec:
-  lookupPolicy:
-    local: false
-  tags:
-    -
-      name: v3.30.0
-      from:
-        kind: DockerImage
-        name: 'real.repository/kube1:v3.30.0'
-    -
-      name: v1.0
-      from:
-        kind: DockerImage
-        name: 'real.repository/kube2:v1.0'
-
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -274,21 +254,6 @@ spec:
             claimName: kube3-data-claim
 
 ---
-kind: ImageStream
-apiVersion: image.openshift.io/v1
-metadata:
-  name: kube3
-spec:
-  lookupPolicy:
-    local: false
-  tags:
-    -
-      name: latest
-      from:
-        kind: DockerImage
-        name: 'real.repository/kube3:latest'
-
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -322,3 +287,27 @@ spec:
   selector:
     matchLabels:
       run: kube3-svc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube4
+spec:
+  selector:
+    matchLabels:
+      run: kube4
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        run: kube4
+        dude: franz
+        fred: hans
+    spec:
+      containers:
+        -
+          name: kube4
+          image: 'real.repository/kube4:latest'
+          imagePullPolicy: Always

@@ -104,7 +104,7 @@ class TranspilerUtils
      * @return array
      */
     public function getResourcesToTranspile() {
-        if (!$this->profileIsDirectory($this->profilePath)) {
+        if (!$this->profileIsDirectory()) {
             return [$this->profilePath => $this->outputPath];
         }
 
@@ -126,7 +126,7 @@ class TranspilerUtils
     }
 
     public function getTranspilerSettings() {
-        if (!$this->profileIsDirectory($this->profilePath)) {
+        if (!$this->profileIsDirectory()) {
             return [];
         }
 
