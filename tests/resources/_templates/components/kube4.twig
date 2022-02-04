@@ -1,0 +1,18 @@
+image: change.this.repository/kube4:${TAG}
+
+# for k8s
+_addedLabels:
+  dude: franz
+  fred: hans
+_affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: security
+                operator: In
+                values:
+                  - S2
+          topologyKey: kubernetes.io/hostname
