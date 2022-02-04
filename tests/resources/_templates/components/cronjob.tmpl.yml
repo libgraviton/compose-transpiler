@@ -1,0 +1,20 @@
+
+image: 'cron/job:latest'
+
+# for k8s
+_type: cronjob
+_revisionHistoryLimit: 1
+
+_cronjobs:
+{% for job in jobs %}
+  - name: {{ job.name }}
+    cronSchedule: '{{ job.cronSchedule }}'
+    addedContext:
+      jobId: {{ job.jobId }}
+{% endfor %}
+
+environment:
+  ONE_ENV: dude
+{% if service.jobId is defined %}
+  CRONJOB_ID: '{{ service.jobId }}'
+{% endif %}
