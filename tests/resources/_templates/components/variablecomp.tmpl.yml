@@ -1,5 +1,0 @@
-image: 'variable:latest'
-environment:
-  HANS: "${HANS}"
-  FRED: "${FRED}"
-  FERDINAND: "${FERDINAND}"

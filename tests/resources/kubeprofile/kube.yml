@@ -5,3 +5,13 @@ components:
     mergeIntoComponentPod: kube1
   kube3:
   kube4:
+
+  # should be rendered as multiple cronjobs
+  cronjob:
+    jobs:
+      - cronSchedule: "* * * * *"
+        name: job1
+        jobId: 1
+      - cronSchedule: "30 2 * * *"
+        name: job2
+        jobId: 2
