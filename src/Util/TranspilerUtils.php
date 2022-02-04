@@ -77,7 +77,17 @@ class TranspilerUtils
         $templateLocations[] = __DIR__.'/../resources/templates/';
 
         $loader = new FilesystemLoader($templateLocations, $this->twigBaseDir);
-        $this->twig = new Environment($loader);
+
+        $options = [];
+        if (getenv('DEBUG_MODE') == 'true') {
+            $options = [
+                'debug' => true,
+                'auto_reload' => true,
+                'cache' => sys_get_temp_dir().'/twig'
+            ];
+        }
+
+        $this->twig = new Environment($loader, $options);
         $this->twig->addExtension(new Extension());
         $this->twig->addExtension(new YamlExtension());
     }

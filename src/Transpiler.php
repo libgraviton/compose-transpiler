@@ -25,6 +25,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Transpiler {
 
+    public const TEMPLATE_EXTENSION = '.twig';
+
     /**
      * @var TranspilerUtils
      */
@@ -188,7 +190,7 @@ class Transpiler {
                 $templateName = $serviceData['template'];
             }
 
-            $file = $templateName.'.tmpl.yml';
+            $file = $templateName;
 
             // multiple services using the same params?
             $instanceCount = 1;
@@ -284,8 +286,7 @@ class Transpiler {
                     $scriptName = $scriptData['template'];
                 }
 
-                $file = $scriptName.'.tmpl';
-                $this->utils->writeOutputFile($scriptData['filename'], $this->getSingleFile($file, $scriptData, false));
+                $this->utils->writeOutputFile($scriptData['filename'], $this->getSingleFile($scriptName, $scriptData, false));
                 $this->logger->info('Wrote "'.$scriptData['filename'].'"');
             }
         }
@@ -298,7 +299,7 @@ class Transpiler {
             unset($data['template']);
         }
 
-        return $this->resolveSingleComponent($defaultTemplate.'.tmpl.yml', $data);
+        return $this->resolveSingleComponent($defaultTemplate, $data);
     }
 
     /**
@@ -323,7 +324,7 @@ class Transpiler {
                 if (is_null($mixinData)) {
                     $mixinData = [];
                 }
-                $mixin = $this->getSingleFile($mixinName.'.tmpl.yml', array_merge($data, $mixinData));
+                $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
                 $base = \Ckr\Util\ArrayMerger::doMerge($base, $mixin);
             }
         }
@@ -339,7 +340,7 @@ class Transpiler {
                 if (is_null($wrapperData)) {
                     $wrapperData = [];
                 }
-                $base = $this->getSingleFile($wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
+                $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
             }
         }
 
@@ -361,14 +362,14 @@ class Transpiler {
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
-        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose.tmpl.yml', $data);
+        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose', $data);
         return $services;
     }
 
     /**
      * gets a single template and renders it with data
      *
-     * @param string $file template
+     * @param string $fileName template
      * @param array $data data
      *
      * @throws \Twig_Error_Loader
@@ -378,9 +379,9 @@ class Transpiler {
      *
      * @return mixed
      */
-    private function getSingleFile($file, $data = [], $isYaml = true)
+    private function getSingleFile($fileName, $data = [], $isYaml = true)
     {
-        $file = $this->utils->renderTwigTemplate($file, $data);
+        $file = $this->utils->renderTwigTemplate($fileName.self::TEMPLATE_EXTENSION, $data);
         if ($isYaml) {
             try {
                 return Yaml::parse($file);
