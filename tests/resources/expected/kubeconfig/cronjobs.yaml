@@ -1,0 +1,28 @@
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bulkload
+spec:
+  schedule: '0 10 * * *'
+  jobTemplate:
+    spec:
+      containers:
+        -
+          name: dude
+          image: 'image:latest'
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: anotherOne
+spec:
+  schedule: '10 20 * * *'
+  jobTemplate:
+    spec:
+      containers:
+        -
+          name: dude
+          image: 'image:latest'

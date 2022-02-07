@@ -5,7 +5,11 @@
 
 namespace Graviton\ComposeTranspiler\Util\Twig;
 
+use Graviton\ComposeTranspiler\Util\YamlUtils;
+use Rs\Json\Pointer;
 use Symfony\Component\Yaml\Dumper;
+use Symfony\Component\Yaml\Yaml;
+use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -23,6 +27,7 @@ class Extension extends AbstractExtension
             new TwigFilter('yamlEnv', [$this, 'yamlEnv']),
             new TwigFilter('yamlEnc', [$this, 'yamlEnc']),
             new TwigFilter('jsonEnc', [$this, 'jsonEnc']),
+            new TwigFilter('jsonEnv', [$this, 'jsonEnv']),
             new TwigFilter('ensureBoolean', [$this, 'ensureBoolean'])
         ];
     }
@@ -31,7 +36,15 @@ class Extension extends AbstractExtension
     {
         return [
             new TwigFunction('strRepeat', 'str_repeat'),
-            new TwigFunction('ensureBoolean', [$this, 'ensureBoolean'])
+            new TwigFunction('ensureBoolean', [$this, 'ensureBoolean']),
+            new TwigFunction(
+                'subPathRendering',
+                [$this, 'subPathRendering'],
+                [
+                    'needs_environment' => true,
+                    'needs_context' => true
+                ]
+            )
         ];
     }
 
@@ -61,6 +74,11 @@ class Extension extends AbstractExtension
         return json_encode($structure);
     }
 
+    public function jsonEnv($structure)
+    {
+        return str_replace('"', '\\"', json_encode($structure));
+    }
+
     public function ensureBoolean($value) {
         if (is_bool($value) && $value == true) {
             return 'true';
@@ -72,5 +90,35 @@ class Extension extends AbstractExtension
             return 'true';
         }
         return 'false';
+    }
+
+    /**
+     * @throws Pointer\InvalidJsonException
+     * @throws \Twig\Error\SyntaxError
+     * @throws Pointer\NonWalkableJsonException
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\LoaderError
+     */
+    public function subPathRendering(Environment $env, $context, $filename, $subPath = null, $indent = 2) {
+        $content = $env->render($filename, $context);
+
+        // only select first!
+        $array = YamlUtils::multiParse($content);
+        if (isset($array[0]) && is_array($array[0])) {
+            $array = $array[0];
+        }
+
+        if (!is_null($subPath)) {
+            $jsonPointer = new Pointer(json_encode($array));
+            $array = $jsonPointer->get($subPath);
+
+            // back to array
+            $array = json_decode(
+                json_encode($array),
+                true
+            );
+        }
+
+        return $this->yamlEnc($array, $indent);
     }
 }

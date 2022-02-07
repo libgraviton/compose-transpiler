@@ -21,6 +21,10 @@ class YamlUtils
             $content = file_get_contents($content);
         }
 
+        if (!str_contains($content, self::$glue)) {
+            return Yaml::parse($content);
+        }
+
         // split by '---\n'
         $parts = preg_split('/---\n/m', $content);
         $returnParts = [];

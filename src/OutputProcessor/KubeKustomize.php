@@ -53,7 +53,7 @@ class KubeKustomize extends OutputProcessorAbstract {
         try {
             $parts = YamlUtils::multiParse($kubeYaml);
         } catch (\Exception $e) {
-            throw new \Exception('Error parsing: '.var_export($kubeYaml, true));
+            throw new \Exception('Error parsing: '.var_export($kubeYaml, true), 0, $e);
         }
         $transformed = [];
 
@@ -93,6 +93,15 @@ class KubeKustomize extends OutputProcessorAbstract {
         // write kustomization.yaml
         ksort($this->configMap);
         ksort($this->secretEnvs);
+
+        if (isset($this->outputOptions['resources'])) {
+            natsort($this->outputOptions['resources']);
+
+            $this->resources = array_merge(
+                $this->resources,
+                $this->outputOptions['resources'],
+            );
+        }
 
         // do we have any json patches referenced?
         if (isset($this->outputOptions['patchesJson6902'])) {

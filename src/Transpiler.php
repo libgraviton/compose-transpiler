@@ -4,19 +4,20 @@
  */
 namespace Graviton\ComposeTranspiler;
 
+use Ckr\Util\ArrayMerger;
 use Graviton\ComposeTranspiler\OutputProcessor\ComposeOnShell;
 use Graviton\ComposeTranspiler\OutputProcessor\KubeKustomize;
 use Graviton\ComposeTranspiler\OutputProcessor\OutputProcessorAbstract;
 use Graviton\ComposeTranspiler\Replacer\VersionTagReplacer;
-use Graviton\ComposeTranspiler\Util\ProfileResolver;
+use Graviton\ComposeTranspiler\Util\YamlFileResolver;
 use Graviton\ComposeTranspiler\Util\TranspilerUtils;
+use Graviton\ComposeTranspiler\Util\YamlUtils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * @author   List of contributors <https://github.com/libgraviton/compose-transpiler/graphs/contributors>
@@ -25,10 +26,17 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Transpiler {
 
+    public const TEMPLATE_EXTENSION = '.twig';
+
     /**
      * @var TranspilerUtils
      */
     private $utils;
+
+    /**
+     * @var array
+     */
+    private $transpilerSettings = [];
 
     /**
      * @var OutputProcessorAbstract
@@ -72,8 +80,10 @@ class Transpiler {
         // wraps twig and fs operations
         $this->utils = new TranspilerUtils($baseDir, $profilePath, $outputPath);
 
+        $this->transpilerSettings = $this->utils->getTranspilerSettings();
+
         // set outputprocessor
-        $this->setOutputProcessor($this->utils->getTranspilerSettings());
+        $this->setOutputProcessor($this->transpilerSettings);
     }
 
     /**
@@ -152,7 +162,7 @@ class Transpiler {
      */
     private function transpileFile($profileFile, $destFile)
     {
-        $profile = (new ProfileResolver($profileFile))->resolve();
+        $profile = YamlFileResolver::resolve($profileFile);
 
         // if we find that we have 'version' and 'services' in our file, we assume it's already a recipe -> just output
         if (isset($profile['version']) && isset($profile['services'])) {
@@ -188,7 +198,7 @@ class Transpiler {
                 $templateName = $serviceData['template'];
             }
 
-            $file = $templateName.'.tmpl.yml';
+            $file = $templateName;
 
             // multiple services using the same params?
             $instanceCount = 1;
@@ -241,20 +251,20 @@ class Transpiler {
             $footer = $this->getBaseTemplate($footerTemplate, $footerData);
         }
 
-        $recipe = \Ckr\Util\ArrayMerger::doMerge($recipe, $footer);
+        $recipe = ArrayMerger::doMerge($recipe, $footer);
 
         // replace $TAG vars
         $replacer = new VersionTagReplacer($this->releaseFile);
         $replacer->setLogger($this->logger);
         $recipe = $replacer->replaceArray($recipe);
 
-        // let outputprocessor do with that structure what he wants..
+        // let outputprocessor do with that structure what he wants
         $this->outputProcessor->processFile($this, $destFile, $recipe, $profile);
 
-        // are there any scripts to generate?
-        if (isset($profile['scripts']) && is_array($profile['scripts'])) {
+        /********* ADDITIONAL TEMPLATES TO RENDER ************/
 
-            // compose image list
+        if (isset($this->transpilerSettings['addedFiles']) && is_array($this->transpilerSettings['addedFiles'])) {
+
             $imageList = [];
             foreach ($recipe['services'] as $service) {
                 if (isset($service['image'])) {
@@ -270,23 +280,34 @@ class Transpiler {
                 'imageListUnique' => array_unique($imageList)
             ];
 
-            foreach ($profile['scripts'] as $scriptName => $scriptData) {
-                if (is_null($scriptData)) {
-                    $scriptData = [];
-                }
-                $scriptData = array_merge($baseScriptData, $scriptData);
-
-                if (!isset($scriptData['filename'])) {
-                    throw new \LogicException("You must specify a filename - what should be the name of the script.");
+            foreach ($this->transpilerSettings['addedFiles'] as $data) {
+                $isYaml = false;
+                if (isset($data['isYaml'])) {
+                    $isYaml = $data['isYaml'];
                 }
 
-                if (isset($scriptData['template'])) {
-                    $scriptName = $scriptData['template'];
+                if (!isset($data['template'])) {
+                    throw new \LogicException("You must specify a template - what should be the template of the addedFile.");
+                }
+                if (!isset($data['destinationFile'])) {
+                    throw new \LogicException("You must specify a destinationFile - what should be the destinationFile of the addedFile.");
                 }
 
-                $file = $scriptName.'.tmpl';
-                $this->utils->writeOutputFile($scriptData['filename'], $this->getSingleFile($file, $scriptData, false));
-                $this->logger->info('Wrote "'.$scriptData['filename'].'"');
+                $addedVars = [];
+                if (isset($data['vars']) && is_array($data['vars'])) {
+                    $addedVars = $data['vars'];
+                }
+
+                $scriptData = array_merge($baseScriptData, $addedVars);
+
+                $output = $this->getSingleFile($data['template'], $scriptData, $isYaml);
+
+                if ($isYaml && is_array($output)) {
+                    $output = YamlUtils::multiDump($output);
+                }
+
+                $this->utils->writeOutputFile($data['destinationFile'], $output);
+                $this->logger->info('Wrote "'.$data['destinationFile'].'"');
             }
         }
     }
@@ -298,7 +319,7 @@ class Transpiler {
             unset($data['template']);
         }
 
-        return $this->resolveSingleComponent($defaultTemplate.'.tmpl.yml', $data);
+        return $this->resolveSingleComponent($defaultTemplate, $data);
     }
 
     /**
@@ -323,14 +344,14 @@ class Transpiler {
                 if (is_null($mixinData)) {
                     $mixinData = [];
                 }
-                $mixin = $this->getSingleFile($mixinName.'.tmpl.yml', array_merge($data, $mixinData));
-                $base = \Ckr\Util\ArrayMerger::doMerge($base, $mixin);
+                $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
+                $base = ArrayMerger::doMerge($base, $mixin);
             }
         }
 
         // additions itself? (gets transported 1:1)
         if (isset($data['additions']) && is_array($data['additions'])) {
-            $base = \Ckr\Util\ArrayMerger::doMerge($base, $data['additions']);
+            $base = ArrayMerger::doMerge($base, $data['additions']);
         }
 
         // a wrapper takes the result of the first template and can create a new one..
@@ -339,7 +360,7 @@ class Transpiler {
                 if (is_null($wrapperData)) {
                     $wrapperData = [];
                 }
-                $base = $this->getSingleFile($wrapperName.'.tmpl.yml', array_merge($base, $wrapperData));
+                $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
             }
         }
 
@@ -361,14 +382,14 @@ class Transpiler {
      */
     private function addExposeHost($services, $currentServiceName, $data)
     {
-        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose.tmpl.yml', $data);
+        $services[$currentServiceName.'-expose'] = $this->getSingleFile('_expose', $data);
         return $services;
     }
 
     /**
      * gets a single template and renders it with data
      *
-     * @param string $file template
+     * @param string $fileName template
      * @param array $data data
      *
      * @throws \Twig_Error_Loader
@@ -378,12 +399,16 @@ class Transpiler {
      *
      * @return mixed
      */
-    private function getSingleFile($file, $data = [], $isYaml = true)
+    private function getSingleFile($fileName, $data = [], $isYaml = true)
     {
-        $file = $this->utils->renderTwigTemplate($file, $data);
+        if (!str_ends_with($fileName, self::TEMPLATE_EXTENSION)) {
+            $fileName .= self::TEMPLATE_EXTENSION;
+        }
+
+        $file = $this->utils->renderTwigTemplate($fileName, $data);
         if ($isYaml) {
             try {
-                return Yaml::parse($file);
+                return YamlUtils::multiParse($file);
             } catch (ParseException $e) {
                 throw new \Exception("Error in YML parsing with body = ".$file, 0, $e);
             }

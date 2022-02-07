@@ -2,8 +2,9 @@
 <?php
 require __DIR__.'/../vendor/autoload.php';
 
-use Symfony\Component\Console\Application;
+$dotenv = new \Symfony\Component\Dotenv\Dotenv();
+$dotenv->load(__DIR__.'/../.env');
 
-$application = new Application('compose-transpiler');
+$application = new Symfony\Component\Console\Application('compose-transpiler');
 $application->add(new \Graviton\ComposeTranspiler\Command\TranspileCommand());
 $application->run();
