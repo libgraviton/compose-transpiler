@@ -23,11 +23,6 @@
   {{- include('kube/fragments/imagestream.twig') }}
 {% endif %}
 
-{# type cronjob #}
-{% if type == "cronjob" %}
-  {{- include('kube/fragments/cronjob.twig') }}
-{% endif %}
-
 {# type job #}
 {% if type == "job" %}
   {{- include('kube/fragments/job.twig') }}

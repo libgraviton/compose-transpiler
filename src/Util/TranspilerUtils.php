@@ -8,8 +8,8 @@ use Graviton\ComposeTranspiler\Util\Twig\Extension;
 use Symfony\Bridge\Twig\Extension\YamlExtension;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Yaml\Yaml;
 use Twig\Environment;
+use Twig\Extra\String\StringExtension;
 use Twig\Loader\FilesystemLoader;
 
 /**
@@ -88,8 +88,16 @@ class TranspilerUtils
         }
 
         $this->twig = new Environment($loader, $options);
+
+        $settings = $this->getTranspilerSettings();
+        if (isset($settings['globals']) && is_array($settings['globals'])) {
+            foreach ($settings['globals'] as $name => $value) {
+                $this->twig->addGlobal($name, $value);
+            }
+        }
         $this->twig->addExtension(new Extension());
         $this->twig->addExtension(new YamlExtension());
+        $this->twig->addExtension(new StringExtension());
     }
 
     public function renderTwigTemplate($templateName, $templateData) {
@@ -136,32 +144,17 @@ class TranspilerUtils
     }
 
     public function getTranspilerSettings() {
-        if (!$this->profileIsDirectory()) {
+        if (is_file($this->profilePath)) {
+            $settingsFile = dirname($this->profilePath).DIRECTORY_SEPARATOR.'transpiler.yml';
+        } elseif (is_dir($this->profilePath)) {
+            $settingsFile = $this->profilePath.DIRECTORY_SEPARATOR.'transpiler.yml';
+        }
+
+        if (empty($settingsFile) || !file_exists($settingsFile)) {
             return [];
         }
 
-        $settingsFile = $this->profilePath.'transpiler.yml';
-        if ($this->fs->exists($settingsFile)) {
-            return Yaml::parse(file_get_contents($settingsFile));
-        }
-
-        return [];
-    }
-
-    /**
-     * @return Environment
-     */
-    public function getTwig(): Environment
-    {
-        return $this->twig;
-    }
-
-    /**
-     * @param Filesystem $fs
-     */
-    public function setFs(Filesystem $fs): void
-    {
-        $this->fs = $fs;
+        return YamlFileResolver::resolve($settingsFile);
     }
 
     public function writeOutputFile(string $path, string $content, $append = false)

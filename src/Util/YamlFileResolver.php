@@ -5,6 +5,7 @@
  */
 namespace Graviton\ComposeTranspiler\Util;
 
+use Ckr\Util\ArrayMerger;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
@@ -13,19 +14,15 @@ use Symfony\Component\Yaml\Yaml;
  * @license  https://opensource.org/licenses/MIT MIT License
  * @link     http://swisscom.ch
  */
-class ProfileResolver {
+class YamlFileResolver {
 
-    private $filename;
-
-    public function __construct($filename)
-    {
-        $this->filename = $filename;
-        $this->fs = new Filesystem();
+    public static function resolve($filename) {
+        return (new YamlFileResolver())->resolveInheritance($filename);
     }
 
-    public function resolve()
+    private function __construct()
     {
-        return $this->resolveInheritance($this->filename);
+        $this->fs = new Filesystem();
     }
 
     private function resolveInheritance($filename, $baseYml = [])
@@ -62,7 +59,7 @@ class ProfileResolver {
             $yml = $parentYml;
         }
 
-        $yml = \Ckr\Util\ArrayMerger::doMerge($yml, $baseYml);
+        $yml = ArrayMerger::doMerge($yml, $baseYml);
 
         return $yml;
     }

@@ -1,0 +1,4 @@
+addedFiles:
+  script:
+    template: examplescript
+    destinationFile: script.sh

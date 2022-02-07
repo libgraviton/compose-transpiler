@@ -1,0 +1,17 @@
+{% for name, cronjob in cronjobs %}
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ name }}
+spec:
+  schedule: '{{ cronjob.cronSchedule }}'
+  jobTemplate:
+    spec:
+      containers:
+        -
+          name: dude
+          image: 'image:latest'
+
+{% endfor %}

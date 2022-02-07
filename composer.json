@@ -2,7 +2,7 @@
     "name": "graviton/compose-transpiler",
     "license": "MIT",
     "require": {
-        "php": "~7.4|~8",
+        "php": "^8.1.0",
         "symfony/yaml": "^6.0",
         "symfony/filesystem": "^6.0",
         "symfony/console": "^6.0",
@@ -14,7 +14,8 @@
         "symfony/twig-bridge": "^6.0",
         "neunerlei/arrays": "~3",
         "php-jsonpointer/php-jsonpointer": "^4.0",
-        "symfony/dotenv": "^6.0"
+        "symfony/dotenv": "^6.0",
+        "twig/string-extra": "^3.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",

@@ -196,7 +196,13 @@ class TranspilerTest extends TestCase {
             __DIR__ . '/generated/patches/added-env-patch.json',
         );
 
-        //(new Filesystem())->remove(__DIR__.'/generated');
+        // added files by transpiler.yml!
+        $this->assertEqualsCanonicalizing(
+            YamlUtils::multiParse(__DIR__.'/resources/expected/kubeconfig/cronjobs.yaml'),
+            YamlUtils::multiParse(__DIR__.'/generated/cronjobs.yaml'),
+            'cronjobs.yaml'
+        );
+
     }
 
     public function testReplacerRawFile()

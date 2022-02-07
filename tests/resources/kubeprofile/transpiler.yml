@@ -1,3 +1,17 @@
+globals:
+  # here, we specify all cronjobs..
+  cronjobs:
+    bulkload:
+      cronSchedule: '0 10 * * *'
+    anotherOne:
+      cronSchedule: '10 20 * * *'
+
+addedFiles:
+  cronjobs:
+    template: kubernetes/cronjob
+    destinationFile: cronjobs.yaml
+    isYaml: true
+
 outputProcessor:
   name: kube-kustomize
   options:
@@ -8,6 +22,8 @@ outputProcessor:
     imageNameReplaces:
       - search: change.this.repository
         replace: real.repository
+    resources:
+      - cronjobs.yaml
     configurations:
       - kustomize_configs/type1.yaml
       - kustomize_configs/type2.yaml
