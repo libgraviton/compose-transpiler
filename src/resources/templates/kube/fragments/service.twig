@@ -24,3 +24,35 @@ spec:
       name: {{ serviceName|slice(0, 2) }}{{ port }}
 {% endif %}
 {% endfor %}
+
+{% if outputNetworkPoliciesForServicesWithLabel is defined %}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ serviceName }}
+spec:
+  podSelector:
+    matchLabels:
+      run: {{ serviceName }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+{% set labelName = outputNetworkPoliciesForServicesWithLabel|keys|first %}
+              {{ labelName }}: {{ outputNetworkPoliciesForServicesWithLabel[labelName] }}
+      ports:
+{% for port in service._servicePorts %}
+{% if port is iterable %}
+         - protocol: {{ port.protocol|default('TCP') }}
+           port: {{ port.hostPort }}
+{% else %}
+         - protocol: {{ port }}
+           port: TCP
+{% endif %}
+{% endfor %}
+
+{% endif %}
+
