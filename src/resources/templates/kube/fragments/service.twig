@@ -49,8 +49,8 @@ spec:
          - protocol: {{ port.protocol|default('TCP') }}
            port: {{ port.hostPort }}
 {% else %}
-         - protocol: {{ port }}
-           port: TCP
+         - protocol: TCP
+           port: {{ port }}
 {% endif %}
 {% endfor %}
 
