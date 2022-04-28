@@ -23,6 +23,8 @@ class KubeKustomize extends OutputProcessorAbstract {
     private $jsonPatches = [];
     private $yamlPatches = [];
     private $configurations = [];
+    private $commonLabels = [];
+    private $commonAnnotations = [];
 
     // these fields in the *twig base template* are global to the service (meaning deployment in K8 terms), not the container
     private $serviceMetaFields = [
@@ -182,6 +184,14 @@ class KubeKustomize extends OutputProcessorAbstract {
             }
         }
 
+        if (isset($this->outputOptions['commonLabels'])) {
+            $this->commonLabels = $this->outputOptions['commonLabels'];
+        }
+
+        if (isset($this->outputOptions['commonAnnotations'])) {
+            $this->commonAnnotations = $this->outputOptions['commonAnnotations'];
+        }
+
         // write kustomization.yaml
         $this->utils->writeOutputFile(
             'kustomization.yaml',
@@ -320,6 +330,16 @@ class KubeKustomize extends OutputProcessorAbstract {
         // configurations?
         if (!empty($this->configurations)) {
             $yaml['configurations'] = $this->configurations;
+        }
+
+        // common labels
+        if (!empty($this->commonLabels)) {
+            $yaml['commonLabels'] = $this->commonLabels;
+        }
+
+        // common annotations
+        if (!empty($this->commonAnnotations)) {
+            $yaml['commonAnnotations'] = $this->commonAnnotations;
         }
 
         // configmap

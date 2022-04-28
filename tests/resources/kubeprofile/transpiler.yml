@@ -21,6 +21,12 @@ outputProcessor:
     # if set, we will generate a NetworkPolicy kind for every service covering its port and allowing ingress from pods with these labels
     outputNetworkPoliciesForServicesWithLabel:
       app: compose-transpiler
+    commonLabels:
+      owner: alice
+      app: bingo
+    commonAnnotations:
+      owner: joe
+      app: bongo
     deploymentConfigHistoryLimit: 3
     imageNameReplaces:
       - search: change.this.repository
