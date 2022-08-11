@@ -39,10 +39,21 @@ spec:
     - Ingress
   ingress:
     - from:
+{% if networkPoliciesNamespaceSelectorLabel is defined %}
+
+        - namespaceSelector:
+            matchLabels:
+{% for labelName, labelValue in networkPoliciesNamespaceSelectorLabel %}
+              {{ labelName }}: {{ labelValue }}
+{% endfor %}
+
+{% endif %}
+
         - podSelector:
             matchLabels:
-{% set labelName = outputNetworkPoliciesForServicesWithLabel|keys|first %}
-              {{ labelName }}: {{ outputNetworkPoliciesForServicesWithLabel[labelName] }}
+{% for labelName, labelValue in outputNetworkPoliciesForServicesWithLabel %}
+              {{ labelName }}: {{ labelValue }}
+{% endfor %}
       ports:
 {% for port in service._servicePorts %}
 {% if port is iterable %}
