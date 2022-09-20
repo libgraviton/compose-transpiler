@@ -348,6 +348,11 @@ class Transpiler {
                     $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
                     $base = ArrayMerger::doMerge($base, $mixin);
                 } catch (\Throwable $t) {
+                    if (!is_null($mixin)) {
+                        $this->logger->info('base: '.print_r($base, true));
+                        $this->logger->info('last recorded mixin: '.print_r($mixin, true));
+                    }
+
                     throw new \RuntimeException("Exception in array merging for mixins in file '${file}', mixin '${mixinName}'", 0, $t);
                 }
             }
