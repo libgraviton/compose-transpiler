@@ -339,18 +339,18 @@ class Transpiler {
         $base = $this->getSingleFile($file, $data);
 
         // mixins? -> stuff that gets merged into the array
-        try {
-            if (isset($data['mixins']) && is_array($data['mixins'])) {
-                foreach ($data['mixins'] as $mixinName => $mixinData) {
+        if (isset($data['mixins']) && is_array($data['mixins'])) {
+            foreach ($data['mixins'] as $mixinName => $mixinData) {
+                try {
                     if (is_null($mixinData)) {
                         $mixinData = [];
                     }
                     $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
                     $base = ArrayMerger::doMerge($base, $mixin);
+                } catch (\Throwable $t) {
+                    throw new \RuntimeException("Exception in array merging for mixins in file '${file}', mixin '${mixinName}'", 0, $t);
                 }
             }
-        } catch (\Throwable $t) {
-            throw new \RuntimeException("Exception in array merging for mixins in file ${file}", 0, $t);
         }
 
         // additions itself? (gets transported 1:1)
@@ -363,17 +363,17 @@ class Transpiler {
         }
 
         // a wrapper takes the result of the first template and can create a new one..
-        try {
-            if (isset($data['wrapper']) && is_array($data['wrapper'])) {
-                foreach ($data['wrapper'] as $wrapperName => $wrapperData) {
+        if (isset($data['wrapper']) && is_array($data['wrapper'])) {
+            foreach ($data['wrapper'] as $wrapperName => $wrapperData) {
+                try {
                     if (is_null($wrapperData)) {
                         $wrapperData = [];
                     }
                     $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
+                } catch (\Throwable $t) {
+                    throw new \RuntimeException("Exception in array merging for wrapper section in file '${file}' wrapper '${wrapperName}'", 0, $t);
                 }
             }
-        } catch (\Throwable $t) {
-            throw new \RuntimeException("Exception in array merging for wrapper section in file ${file}", 0, $t);
         }
 
         return $base;
