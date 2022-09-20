@@ -339,29 +339,41 @@ class Transpiler {
         $base = $this->getSingleFile($file, $data);
 
         // mixins? -> stuff that gets merged into the array
-        if (isset($data['mixins']) && is_array($data['mixins'])) {
-            foreach ($data['mixins'] as $mixinName => $mixinData) {
-                if (is_null($mixinData)) {
-                    $mixinData = [];
+        try {
+            if (isset($data['mixins']) && is_array($data['mixins'])) {
+                foreach ($data['mixins'] as $mixinName => $mixinData) {
+                    if (is_null($mixinData)) {
+                        $mixinData = [];
+                    }
+                    $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
+                    $base = ArrayMerger::doMerge($base, $mixin);
                 }
-                $mixin = $this->getSingleFile($mixinName, array_merge($data, $mixinData));
-                $base = ArrayMerger::doMerge($base, $mixin);
             }
+        } catch (\Throwable $t) {
+            throw new \RuntimeException("Exception in array merging for mixins in file ${file}", 0, $t);
         }
 
         // additions itself? (gets transported 1:1)
-        if (isset($data['additions']) && is_array($data['additions'])) {
-            $base = ArrayMerger::doMerge($base, $data['additions']);
+        try {
+            if (isset($data['additions']) && is_array($data['additions'])) {
+                $base = ArrayMerger::doMerge($base, $data['additions']);
+            }
+        } catch (\Throwable $t) {
+            throw new \RuntimeException("Exception in array merging for additions in file ${file}", 0, $t);
         }
 
         // a wrapper takes the result of the first template and can create a new one..
-        if (isset($data['wrapper']) && is_array($data['wrapper'])) {
-            foreach ($data['wrapper'] as $wrapperName => $wrapperData) {
-                if (is_null($wrapperData)) {
-                    $wrapperData = [];
+        try {
+            if (isset($data['wrapper']) && is_array($data['wrapper'])) {
+                foreach ($data['wrapper'] as $wrapperName => $wrapperData) {
+                    if (is_null($wrapperData)) {
+                        $wrapperData = [];
+                    }
+                    $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
                 }
-                $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
             }
+        } catch (\Throwable $t) {
+            throw new \RuntimeException("Exception in array merging for wrapper section in file ${file}", 0, $t);
         }
 
         return $base;
@@ -401,19 +413,23 @@ class Transpiler {
      */
     private function getSingleFile($fileName, $data = [], $isYaml = true)
     {
-        if (!str_ends_with($fileName, self::TEMPLATE_EXTENSION)) {
-            $fileName .= self::TEMPLATE_EXTENSION;
-        }
-
-        $file = $this->utils->renderTwigTemplate($fileName, $data);
-        if ($isYaml) {
-            try {
-                return YamlUtils::multiParse($file);
-            } catch (ParseException $e) {
-                throw new \Exception("Error in YML parsing with body = ".$file, 0, $e);
+        try {
+            if (!str_ends_with($fileName, self::TEMPLATE_EXTENSION)) {
+                $fileName .= self::TEMPLATE_EXTENSION;
             }
+
+            $file = $this->utils->renderTwigTemplate($fileName, $data);
+            if ($isYaml) {
+                try {
+                    return YamlUtils::multiParse($file);
+                } catch (ParseException $e) {
+                    throw new \Exception("Error in YML parsing with body = " . $file, 0, $e);
+                }
+            }
+            return $file;
+        } catch (\Throwable $t) {
+            throw new \RuntimeException("Error in preparing file ${fileName}", 0, $t);
         }
-        return $file;
     }
 
     private function setOutputProcessor($profile)
