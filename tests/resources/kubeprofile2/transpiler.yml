@@ -1,0 +1,2 @@
+outputProcessor:
+  name: kube-kustomize

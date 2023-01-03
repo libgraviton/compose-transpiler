@@ -1,0 +1,2 @@
+_inheritance:
+  extends: ../kubeprofile/kube.yml
