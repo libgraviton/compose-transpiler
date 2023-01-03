@@ -150,8 +150,8 @@ spec:
               app: compose-transpiler
       ports:
         -
-          protocol: 9000
-          port: TCP
+          protocol: TCP
+          port: 9000
         -
           protocol: TCP
           port: 9001
@@ -187,7 +187,7 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: kube180
+  name: kube180-0
 spec:
   host: kube1$(DOMAIN)
   port:
@@ -214,9 +214,36 @@ status:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: kube19001
+  name: kube19001-1
 spec:
   host: kube2$(DOMAIN)
+  port:
+    targetPort: ku9001
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: kube1
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+    -
+      conditions:
+        -
+          status: 'True'
+          type: Admitted
+      routerName: router
+      wildcardPolicy: None
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kube19001-2
+spec:
+  host: kube3$(DOMAIN)
   port:
     targetPort: ku9001
   tls:
