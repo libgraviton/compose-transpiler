@@ -1,10 +1,13 @@
 {% import "kube/macros.twig" as macros %}
 
+{% set iter = 0 %}
+{% for expose in service._exposes %}
+
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: {{ serviceName }}{{ expose.port }}
+  name: {{ serviceName }}{{ expose.port }}-{{ iter }}
 spec:
   host: '{{ expose.name }}${DOMAIN}'
   port:
@@ -24,3 +27,6 @@ status:
           type: Admitted
       routerName: router
       wildcardPolicy: None
+
+{% set iter = iter+1 %}
+{% endfor %}

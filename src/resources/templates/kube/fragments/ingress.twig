@@ -3,7 +3,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ serviceName }}{{ expose.port }}
+  name: {{ serviceName }}-ingress
 {% if expose.basicAuth %}
   annotations:
     ingress.kubernetes.io/auth-type: "basic"
@@ -12,6 +12,7 @@ metadata:
 
 spec:
   rules:
+{% for expose in service._exposes %}
   - host: '{{ expose.name }}${DOMAIN}'
     http:
       paths:
@@ -19,3 +20,4 @@ spec:
         backend:
           serviceName: {{ serviceName }}
           servicePort: {{ serviceName|slice(0, 2) }}{{ expose.port }}
+{% endfor %}

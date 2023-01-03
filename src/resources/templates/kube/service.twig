@@ -42,15 +42,11 @@
 
 {# type route / ingress #}
 {% if service._exposes %}
-
-{% for expose in service._exposes %}
   {%- if dialect == "openshift" %}
     {{- include('kube/fragments/route.twig') }}
   {%- else %}
     {{- include('kube/fragments/ingress.twig') }}
   {%- endif %}
-{% endfor %}
-
 {% endif %}
 
 {# type servicemonitor #}
