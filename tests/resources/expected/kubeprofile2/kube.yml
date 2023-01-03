@@ -1,0 +1,306 @@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube1
+spec:
+  selector:
+    matchLabels:
+      run: kube1
+  replicas: 2
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        run: kube1
+    spec:
+      containers:
+        -
+          name: kube1
+          image: 'change.this.repository/kube1:v3.30.0'
+          imagePullPolicy: Always
+          env:
+            -
+              name: SOME_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: projectName
+                  key: SOME_ENV_VALUE
+            -
+              name: SOME_ENV_COMPOSED
+              value: thisis$(SOME_ENV_COMPOSED_VALUE)composed
+            -
+              name: SOME_SECRET_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: projectName
+                  key: SOME_SECRET_ENV_VALUE
+            -
+              name: SOME_SECRET_ENV_COMPOSED
+              value: thisisalso$(SOME_SECRET_ENV_COMPOSED_VALUE)composed
+          ports:
+            -
+              containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: liveness-port
+            failureThreshold: 1
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            -
+              name: kube1-data
+              mountPath: /data
+        -
+          name: kube2-merge-into-kube1
+          image: 'change.this.repository/kube2:v1.0'
+          imagePullPolicy: Always
+          env:
+            -
+              name: SOME_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: projectName
+                  key: SOME_ENV_VALUE_KUBE2
+            -
+              name: SOME_SECRET_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: projectName
+                  key: SOME_SECRET_ENV_KUBE2
+          ports:
+            -
+              containerPort: 9000
+            -
+              containerPort: 9001
+            -
+              containerPort: 8000
+          volumeMounts:
+            -
+              name: kube2-merge-into-kube1-data
+              mountPath: /data
+      volumes:
+        -
+          name: kube1-data
+          persistentVolumeClaim:
+            claimName: kube1-data-claim
+        -
+          name: kube2-merge-into-kube1-data
+          persistentVolumeClaim:
+            claimName: kube2-merge-into-kube1-data-claim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube1
+  labels:
+    run: kube1-svc
+spec:
+  selector:
+    run: kube1
+  ports:
+    -
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: ku9000
+    -
+      port: 9001
+      targetPort: 9001
+      protocol: TCP
+      name: ku9001
+    -
+      port: 9002
+      targetPort: 9002
+      protocol: UDP
+      name: ku9002
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube1-data-claim
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube2-merge-into-kube1-data-claim
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kube1-ingress
+spec:
+  rules:
+    -
+      host: kube1$(DOMAIN)
+      http:
+        paths:
+          -
+            path: /
+            backend:
+              serviceName: kube1
+              servicePort: ku80
+    -
+      host: kube2$(DOMAIN)
+      http:
+        paths:
+          -
+            path: /
+            backend:
+              serviceName: kube1
+              servicePort: ku9001
+    -
+      host: kube3$(DOMAIN)
+      http:
+        paths:
+          -
+            path: /
+            backend:
+              serviceName: kube1
+              servicePort: ku9001
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: kube1-monitor
+  name: kube1-monitor
+spec:
+  endpoints:
+    -
+      interval: 20s
+      port: ku9000
+      scheme: http
+      path: /metrics
+  selector:
+    matchLabels:
+      run: kube1-svc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube3
+spec:
+  selector:
+    matchLabels:
+      run: kube3
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: kube3
+    spec:
+      containers:
+        -
+          name: kube3
+          image: 'change.this.repository/kube3:latest'
+          imagePullPolicy: Always
+          volumeMounts:
+            -
+              name: kube3-data
+              mountPath: /data
+      volumes:
+        -
+          name: kube3-data
+          persistentVolumeClaim:
+            claimName: kube3-data-claim
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube3-data-claim
+spec:
+  resources:
+    requests:
+      storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: kube3-monitor
+  name: kube3-monitor
+spec:
+  endpoints:
+    -
+      interval: 900s
+      port: ku8888
+      scheme: tcp
+      path: /customMetrics
+    -
+      interval: 800s
+      port: ku8889
+      scheme: http
+      path: /customMetrics2
+  selector:
+    matchLabels:
+      run: kube3-svc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube4
+spec:
+  selector:
+    matchLabels:
+      run: kube4
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: kube4
+        dude: franz
+        fred: hans
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            -
+              weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    -
+                      key: security
+                      operator: In
+                      values:
+                        - S2
+                topologyKey: kubernetes.io/hostname
+      containers:
+        -
+          name: kube4
+          image: 'change.this.repository/kube4:latest'
+          imagePullPolicy: Always
