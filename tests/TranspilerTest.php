@@ -149,6 +149,8 @@ class TranspilerTest extends TestCase {
      */
     public function testKubeDirTranspiling()
     {
+        (new Filesystem())->remove(__DIR__.'/generated');
+
         $sut = new Transpiler(
             __DIR__.'/resources/_templates',
             __DIR__.'/resources/kubeprofile',
@@ -202,7 +204,43 @@ class TranspilerTest extends TestCase {
             YamlUtils::multiParse(__DIR__.'/generated/cronjobs.yaml'),
             'cronjobs.yaml'
         );
+    }
 
+    /**
+     * this profile does not have the openshift dialect!
+     *
+     * @return void
+     */
+    public function testKubeDir2Transpiling()
+    {
+        (new Filesystem())->remove(__DIR__.'/generated');
+
+        $sut = new Transpiler(
+            __DIR__.'/resources/_templates',
+            __DIR__.'/resources/kubeprofile2',
+            __DIR__.'/generated/',
+            $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')->getMock()
+        );
+        $sut->setBaseEnvFile(__DIR__.'/resources/kubeprofile/kube.env');
+        $sut->setReleaseFile(__DIR__.'/resources/kubeprofile/kube.release');
+
+        $sut->transpile();
+
+        // kube.yml and kube2.yml should be identical, same as expected one..
+        $expectedKubeYaml = YamlUtils::multiParse(__DIR__.'/resources/expected/kubeprofile2/kube.yml');
+
+        // kube.yml should be as expected
+        $this->assertEqualsCanonicalizing(
+            $expectedKubeYaml,
+            YamlUtils::multiParse(__DIR__.'/generated/kube.yml'),
+            'diff between '.__DIR__.'/resources/expected/kubeprofile2/kube.yml'.' and '.__DIR__.'/generated/kube.yml'
+        );
+
+        // see kustomization.yaml is as expected
+        $this->assertEqualsCanonicalizing(
+            Yaml::parseFile(__DIR__.'/resources/expected/kubeprofile2/kustomization.yaml'),
+            Yaml::parseFile(__DIR__.'/generated/kustomization.yaml')
+        );
     }
 
     public function testReplacerRawFile()
