@@ -16,7 +16,6 @@ outputProcessor:
   name: kube-kustomize
   options:
     projectName: transpiler
-    dialect: openshift
     imagestreamsAutomatic: true
     # if set, we will generate a NetworkPolicy kind for every service covering its port and allowing ingress from pods with these labels
     outputNetworkPoliciesForServicesWithLabel:

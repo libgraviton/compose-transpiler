@@ -1,2 +1,4 @@
 outputProcessor:
   name: kube-kustomize
+  options:
+    ingressIsStable: false
