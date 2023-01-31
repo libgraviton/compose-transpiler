@@ -1,11 +1,16 @@
 
 ---
+{% if ingressIsStable is defined and ingressIsStable == false %}
 apiVersion: extensions/v1beta1
+{% else %}
+apiVersion: networking.k8s.io/v1
+{% endif %}
 kind: Ingress
 metadata:
   name: {{ serviceName }}-ingress
-{% if expose.basicAuth %}
   annotations:
+    route.openshift.io/termination: edge
+{% if expose.basicAuth %}
     ingress.kubernetes.io/auth-type: "basic"
     ingress.kubernetes.io/auth-secret: "basic-auth"
 {% endif %}
