@@ -197,28 +197,37 @@ spec:
       http:
         paths:
           -
+            pathType: Prefix
             path: /
             backend:
-              serviceName: kube1
-              servicePort: ku80
+              service:
+                name: kube1
+                port:
+                  name: ku80
     -
       host: kube2$(DOMAIN)
       http:
         paths:
           -
+            pathType: Prefix
             path: /
             backend:
-              serviceName: kube1
-              servicePort: ku9001
+              service:
+                name: kube1
+                port:
+                  name: ku9001
     -
       host: kube3$(DOMAIN)
       http:
         paths:
           -
+            pathType: Prefix
             path: /
             backend:
-              serviceName: kube1
-              servicePort: ku9001
+              service:
+                name: kube1
+                port:
+                  name: ku9001
 
 ---
 apiVersion: monitoring.coreos.com/v1

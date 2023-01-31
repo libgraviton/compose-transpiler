@@ -21,8 +21,22 @@ spec:
   - host: '{{ expose.name }}${DOMAIN}'
     http:
       paths:
+
+{% if ingressIsStable is defined and ingressIsStable == false %}
       - path: /
         backend:
           serviceName: {{ serviceName }}
           servicePort: {{ serviceName|slice(0, 2) }}{{ expose.port }}
+
+{% else %}
+      -
+        pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: {{ serviceName }}
+            port:
+              name: {{ serviceName|slice(0, 2) }}{{ expose.port }}
+{% endif %}
+
 {% endfor %}
