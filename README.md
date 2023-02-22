@@ -1,8 +1,8 @@
 ## compose transpiler
 
-[![Travis](https://img.shields.io/travis/libgraviton/compose-transpiler.svg)](https://travis-ci.org/libgraviton/compose-transpiler)
+[![CI](https://github.com/libgraviton/compose-transpiler/actions/workflows/ci.yml/badge.svg)](https://github.com/libgraviton/compose-transpiler/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/libgraviton/compose-transpiler/badge.svg?branch=develop)](https://coveralls.io/github/libgraviton/compose-transpiler?branch=develop)
 [![Docker Pulls](https://img.shields.io/docker/pulls/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
-[![Docker Stars](https://img.shields.io/docker/stars/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
 [![Docker Automated](https://img.shields.io/docker/automated/graviton/compose-transpiler.svg)](https://hub.docker.com/r/graviton/compose-transpiler/)
 
 A small script that transpiles yaml structures (like compose files) from templates.
