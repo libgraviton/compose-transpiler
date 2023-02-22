@@ -16,6 +16,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 class YamlFileResolver {
 
+    private Filesystem $fs;
+
     public static function resolve($filename) {
         return (new YamlFileResolver())->resolveInheritance($filename);
     }
