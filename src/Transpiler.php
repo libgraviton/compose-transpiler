@@ -353,7 +353,7 @@ class Transpiler {
                         $this->logger->info('last recorded mixin: '.print_r($mixin, true));
                     }
 
-                    throw new \RuntimeException("Exception in array merging for mixins in file '${file}', mixin '${mixinName}'", 0, $t);
+                    throw new \RuntimeException("Exception in array merging for mixins in file '{$file}', mixin '{$mixinName}'", 0, $t);
                 }
             }
         }
@@ -364,7 +364,7 @@ class Transpiler {
                 $base = ArrayMerger::doMerge($base, $data['additions']);
             }
         } catch (\Throwable $t) {
-            throw new \RuntimeException("Exception in array merging for additions in file ${file}", 0, $t);
+            throw new \RuntimeException("Exception in array merging for additions in file {$file}", 0, $t);
         }
 
         // a wrapper takes the result of the first template and can create a new one..
@@ -376,7 +376,7 @@ class Transpiler {
                     }
                     $base = $this->getSingleFile($wrapperName, array_merge($base, $wrapperData));
                 } catch (\Throwable $t) {
-                    throw new \RuntimeException("Exception in array merging for wrapper section in file '${file}' wrapper '${wrapperName}'", 0, $t);
+                    throw new \RuntimeException("Exception in array merging for wrapper section in file '{$file}' wrapper '{$wrapperName}'", 0, $t);
                 }
             }
         }
@@ -433,7 +433,7 @@ class Transpiler {
             }
             return $file;
         } catch (\Throwable $t) {
-            throw new \RuntimeException("Error in preparing file ${fileName}", 0, $t);
+            throw new \RuntimeException("Error in preparing file {$fileName}", 0, $t);
         }
     }
 

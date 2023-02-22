@@ -12,6 +12,8 @@ use Neunerlei\Arrays\Arrays;
 
 class KubeKustomize extends OutputProcessorAbstract {
 
+    private $currentComponent;
+
     private $outputOptions = [];
 
     private $configMap = [];
