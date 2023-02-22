@@ -54,7 +54,7 @@ jobs:
 
       - name: Run tests
         run: |
-          php -dpcov.directory=${PWD}/src -dpcov.exclude="~vendor~" vendor/bin/phpunit --coverage-clover ${PWD}/coverage.clover --log-junit ${PWD}/phpunit_junit.xml
+          php -dpcov.directory=${PWD}/src -dpcov.exclude="~vendor~" vendor/bin/phpunit --coverage-clover ${PWD}/coverage.clover --log-junit ${PWD}/phpunit_junit.xml tests
 
       - name: Upload Coveralls coverage
         run: |
