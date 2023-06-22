@@ -46,7 +46,9 @@ class YamlFileResolver {
 
             try {
                 $parentYml = $this->resolveInheritance($parentFile, $yml);
-            } catch (\Exception $e) {
+            } catch(\UnexpectedValueException $e) {
+                throw new \RuntimeException("Fix the inheritance at the given key!", 0, $e);
+            } catch(\Exception $e) {
                 throw new \RuntimeException('Could not resolve parent in '.$filename.' (' . $parentFile . ')', 0, $e);
             }
 
