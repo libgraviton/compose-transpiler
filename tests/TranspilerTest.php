@@ -57,7 +57,7 @@ class TranspilerTest extends TestCase {
         (new Filesystem())->remove(__DIR__.'/generated');
     }
 
-    public function dataProvider()
+    public static function dataProvider()
     {
         return [
             [
