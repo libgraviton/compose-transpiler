@@ -158,6 +158,7 @@ metadata:
   annotations:
     route.openshift.io/termination: edge
 spec:
+  ingressClassName: important-ingress-controller
   rules:
     -
       host: kube1$(DOMAIN)
