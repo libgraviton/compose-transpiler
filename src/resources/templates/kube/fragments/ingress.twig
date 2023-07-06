@@ -16,6 +16,11 @@ metadata:
 {% endif %}
 
 spec:
+
+{% if ingressClassName is defined %}
+  ingressClassName: {{ ingressClassName }}
+{% endif %}
+
   rules:
 {% for expose in service._exposes %}
   - host: '{{ expose.name }}${DOMAIN}'
